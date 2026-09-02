@@ -1,0 +1,6 @@
+Qwen3-ASR-1.7B BF16 GGUF
+Package: ggml-org/Qwen3-ASR-1.7B-GGUF
+Files:
+  Qwen3-ASR-1.7B-bf16.gguf
+  mmproj-Qwen3-ASR-1.7B-bf16.gguf
+Format: GGUF BF16 (first-version default; Q8_0 is optional and not shipped as default)

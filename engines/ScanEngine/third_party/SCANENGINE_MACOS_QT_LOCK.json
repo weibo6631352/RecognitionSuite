@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "purpose": "Native macOS arm64 Qt kit used by the PARITY-P1-CODE-MACOS-001 product gate",
+  "kit": {
+    "qt_version": "5.15.2",
+    "architecture": "arm64",
+    "deployment_target_floor": "14.0",
+    "build_type": "release",
+    "required_modules": ["qtbase", "qttools"],
+    "required_tools": ["bin/qmake", "bin/macdeployqt"],
+    "required_frameworks": [
+      "lib/QtCore.framework/QtCore",
+      "lib/QtGui.framework/QtGui",
+      "lib/QtWidgets.framework/QtWidgets"
+    ]
+  },
+  "source": {
+    "publisher": "The Qt Company",
+    "url": "https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz",
+    "mirrorlist": "https://download.qt.io/archive/qt/5.15/5.15.2/single/qt-everywhere-src-5.15.2.tar.xz.mirrorlist",
+    "file_name": "qt-everywhere-src-5.15.2.tar.xz",
+    "bytes": 586690220,
+    "sha256": "3a530d1b243b5dec00bc54937455471aaa3e56849d2593edb8ded07228202240",
+    "license": "GPL-3.0-only OR LGPL-3.0-only OR commercial",
+    "license_paths_in_archive": ["LICENSE.GPL3", "LICENSE.LGPL3", "LICENSE.GPL2"]
+  },
+  "build_recipe": {
+    "configure": "./configure -prefix INSTALL_PREFIX -release -opensource -confirm-license -nomake examples -nomake tests -skip qtwebengine",
+    "build": "cmake --build . --parallel JOBS",
+    "install": "cmake --install .",
+    "notes": "Build natively on arm64 macOS with the selected Qt license. The archive hash and the installed qmake/framework architecture are mandatory evidence; Homebrew and Qt online-installer kits are not accepted for the formal gate."
+  }
+}

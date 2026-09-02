@@ -1,0 +1,47 @@
+# 构建
+build/
+cmake-build-*/
+VoiceEngineWindowsX64/
+compile_commands.json
+CMakeUserPresets.json
+
+# IDE / 系统
+.cache/
+.idea/
+.vscode/
+*.user
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+Thumbs.db
+desktop.ini
+
+# 本地配置
+config.local.json
+logs/
+
+# 脚本本地下载的离线包
+script/windows/offline/
+
+# 会话草稿，不入库
+docs/agent-*-report.md
+
+# FFmpeg 运行库体积大，源码仓保留头文件和 SHA；DLL/LIB 本地已有
+third_party/windows-x64/ffmpeg/bin/
+third_party/windows-x64/ffmpeg/lib/
+third_party/windows-x64/ffmpeg-sdk.zip
+third_party/windows-x64/ffmpeg_unpack/
+
+# 嵌套仓库元数据（llama.cpp 以源码树入库，不是 submodule）
+third_party/common/llama.cpp/.git/
+
+# 由 part1/part2 本地拼出的完整权重（GitHub LFS 单文件上限 2GB）
+models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf
+
+# CLI 试跑日志（试音波形和参考原文入库）
+tests/audio/out/
+tests/audio/dataset/*.wav
+
+# 误生成
+x.txt

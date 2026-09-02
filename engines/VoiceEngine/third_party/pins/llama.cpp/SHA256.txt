@@ -1,0 +1,4 @@
+commit 9731ad3f29da96f588711a0d1eb08cf210721e16
+git-rev-parse HEAD recorded at pin time.
+This pin is a source commit id, not a zip blob hash.
+Build must use the vendored tree; CMake does not download.

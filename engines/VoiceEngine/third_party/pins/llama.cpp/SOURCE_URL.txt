@@ -1,0 +1,3 @@
+https://github.com/ggml-org/llama.cpp
+https://github.com/ggml-org/llama.cpp/commit/9731ad3f29da96f588711a0d1eb08cf210721e16
+License: MIT (see third_party/common/llama.cpp/LICENSE)

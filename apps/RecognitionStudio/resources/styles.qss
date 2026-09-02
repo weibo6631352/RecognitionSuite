@@ -1,0 +1,138 @@
+/* A restrained combination of VoiceEngine's workspace and ScanEngine's navy UI. */
+
+* {
+    font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+
+QMainWindow, QWidget#centralRoot {
+    background: #f3f6f9;
+    color: #17212b;
+}
+
+QFrame#panel, QFrame#runtimeCard {
+    background: #ffffff;
+    border: 1px solid #d8e0e8;
+    border-radius: 6px;
+}
+
+QLabel#headerTitle {
+    color: #153858;
+    font-size: 21px;
+    font-weight: 600;
+}
+
+QLabel#headerSubtitle, QLabel#hintText {
+    color: #667584;
+}
+
+QLabel#sectionTitle {
+    color: #173f67;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+QLabel#runtimeName {
+    color: #25384a;
+    font-weight: 600;
+}
+
+QLabel#runtimeStatus[ready="true"] {
+    color: #087a55;
+    font-weight: 600;
+}
+
+QLabel#runtimeStatus[ready="false"] {
+    color: #b0443a;
+    font-weight: 600;
+}
+
+QPushButton {
+    min-height: 30px;
+    padding: 2px 13px;
+    background: #ffffff;
+    border: 1px solid #c6d0da;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background: #edf3f7;
+    border-color: #91a7ba;
+}
+
+QPushButton:disabled {
+    color: #98a4af;
+    background: #f3f5f7;
+}
+
+QPushButton#primaryButton {
+    color: #ffffff;
+    background: #173f67;
+    border: none;
+    font-weight: 600;
+}
+
+QPushButton#primaryButton:hover {
+    background: #0f527d;
+}
+
+QPushButton#recordButton[recording="true"] {
+    color: #ffffff;
+    background: #bd443c;
+    border: none;
+    font-weight: 600;
+}
+
+QLineEdit, QPlainTextEdit {
+    background: #ffffff;
+    border: 1px solid #ccd6df;
+    border-radius: 4px;
+    padding: 6px;
+    selection-background-color: #2a6f9e;
+}
+
+QLineEdit:focus, QPlainTextEdit:focus {
+    border-color: #2a6f9e;
+}
+
+QProgressBar {
+    min-height: 7px;
+    max-height: 7px;
+    border: none;
+    border-radius: 3px;
+    background: #e2e8ee;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    border-radius: 3px;
+    background: #2388a8;
+}
+
+QTabWidget::pane {
+    background: #ffffff;
+    border: 1px solid #d8e0e8;
+    border-radius: 5px;
+    top: -1px;
+}
+
+QTabBar::tab {
+    min-width: 130px;
+    padding: 9px 18px;
+    margin-right: 3px;
+    color: #536474;
+    background: #e8edf2;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+QTabBar::tab:selected {
+    color: #173f67;
+    background: #ffffff;
+    font-weight: 600;
+}
+
+QStatusBar {
+    color: #536474;
+    background: #edf1f5;
+}

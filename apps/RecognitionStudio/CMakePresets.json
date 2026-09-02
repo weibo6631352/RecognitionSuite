@@ -1,0 +1,29 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-msvc-qt5",
+      "displayName": "Windows MSVC + Qt 5.12.9 + both SDKs",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/windows-msvc-qt5",
+      "cacheVariables": {
+        "CMAKE_GENERATOR_INSTANCE": "C:/Program Files/Microsoft Visual Studio/2022/Professional,version=17.14.37614.0",
+        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-msvc-qt5",
+      "configurePreset": "windows-msvc-qt5",
+      "configuration": "Release",
+      "jobs": 4
+    }
+  ]
+}

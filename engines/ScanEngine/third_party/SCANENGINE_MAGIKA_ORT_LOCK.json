@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "contract": {
+    "purpose": "MinerU Hybrid code-language parity only",
+    "runtime_api": "ONNX Runtime C API",
+    "execution_provider": "CPUExecutionProvider",
+    "batch_shape": [1, 2048],
+    "output_shape": [1, 214],
+    "lazy_shared_session": true,
+    "enters_vlm_gpu_path": false,
+    "windows_cpp_link_abi_dependency": false,
+    "windows_v14_crt_runtime_dependency": true,
+    "windows_direct_imports": ["KERNEL32.dll", "ADVAPI32.dll", "MSVCP140.dll", "MSVCP140_1.dll", "api-ms-win-core-path-l1-1-0.dll", "dbghelp.dll", "SETUPAPI.dll", "dxgi.dll", "VCRUNTIME140_1.dll", "VCRUNTIME140.dll", "api-ms-win-crt-heap-l1-1-0.dll", "api-ms-win-crt-runtime-l1-1-0.dll", "api-ms-win-crt-stdio-l1-1-0.dll", "api-ms-win-crt-string-l1-1-0.dll", "api-ms-win-crt-convert-l1-1-0.dll", "api-ms-win-crt-time-l1-1-0.dll", "api-ms-win-crt-filesystem-l1-1-0.dll", "api-ms-win-crt-math-l1-1-0.dll", "api-ms-win-crt-locale-l1-1-0.dll"],
+    "windows_ort_app_private_dlls": ["onnxruntime.dll", "MSVCP140.dll", "MSVCP140_1.dll", "VCRUNTIME140.dll", "VCRUNTIME140_1.dll"],
+    "windows_runtime_provision": "CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS plus the Windows Universal CRT/runtime already used by the Qt product closure",
+    "windows_loading": "QLibrary/GetProcAddress-compatible C ABI; import library is provenance-only",
+    "macos_runtime_install_name": "@rpath/libonnxruntime.1.dylib",
+    "macos_ort_minimum": "14.0",
+    "macos_mlx_product_minimum": "26.0"
+  },
+  "onnxruntime": {
+    "version": "1.28.0",
+    "tag": "v1.28.0",
+    "tag_commit": "da9b5e364c465de65c49d91e696cd6485270757f",
+    "common_headers_source": "windows_sdk_archive_crlf_bytes",
+    "mac_headers_note": "Mac SDK header text is equivalent after newline normalization; the locked repository header bytes come from the Windows SDK archive.",
+    "sdk_archives": [
+      {
+        "platform": "windows-x64",
+        "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.28.0/onnxruntime-win-x64-1.28.0.zip",
+        "size": 78796801,
+        "sha256": "abef733dacbe2f571547a7150b479b5cb9cc0df22f96c24983a42cadb1b4f8bc"
+      },
+      {
+        "platform": "macos-arm64",
+        "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.28.0/onnxruntime-osx-arm64-1.28.0.tgz",
+        "size": 32396562,
+        "sha256": "1268b359718099bde2cedb55787f182a130067bc4f31e8c88478c445b850d3d8"
+      }
+    ],
+    "python_oracle_wheels": [
+      {
+        "platform": "windows-x64-cp312",
+        "url": "https://files.pythonhosted.org/packages/3e/3b/986ca67c274932ba9ac5332fb10de56f643dfd433c74e33f8ae8f847cf24/onnxruntime-1.28.0-cp312-cp312-win_amd64.whl",
+        "size": 13755036,
+        "sha256": "c35064f9b3c43c81c5d5d282091401d0f1ff22796d93ccade4ea2ece5e137ab8",
+        "build_commit": "45de2a8b06",
+        "runtime_size": 17766752,
+        "runtime_sha256": "3d6bd02dc137b9a1dfdac045a52b147ffb920bb06ab812b08fc8e14279859855",
+        "providers_shared_size": 21816,
+        "providers_shared_sha256": "7ef797110a893f820db67a3f6cf38650110ccb3373567e3048fa8f3af1790040"
+      },
+      {
+        "platform": "macos-arm64-cp312",
+        "url": "https://files.pythonhosted.org/packages/98/f8/dcbe7700dca82fa540035abd3c868fe5ad0f86af00b9a3db7c2e27d15c7d/onnxruntime-1.28.0-cp312-cp312-macosx_14_0_arm64.whl",
+        "size": 19141362,
+        "sha256": "26ff0fdd06efb6c155bae95387a09db1a2be89c7a03e4d0bffd5a171cc2826da",
+        "build_commit": "45de2a8b06",
+        "runtime_size": 30509592,
+        "runtime_sha256": "cadd9517e089d197e5d381bc31813875eb8addce8712bac501645fea8008800c"
+      }
+    ],
+    "windows_sdk_vs_oracle_evidence": {
+      "batch": 1,
+      "fixture_count": 16,
+      "logits_per_fixture": 214,
+      "comparison": "all float32 output bits, first argmax, thresholded final label",
+      "result": "bit-exact",
+      "note": "Batching more than one input changes floating-point results; the product and differential always run [1,2048]."
+    }
+  },
+  "magika": {
+    "python_version": "1.0.3",
+    "tag": "python-v1.0.3",
+    "tag_commit": "9f225aa480e675af44343b9160f077073ed1b752",
+    "model": "standard_v3_3",
+    "python_oracle_implementation": {
+      "path_in_wheel": "magika/magika.py",
+      "size": 34181,
+      "sha256": "d638fffdd95f5004dfd7e0f19f87cb5a7bc5e64f198ac1f8e99653b94da4401e",
+      "record_size": 2632,
+      "record_sha256": "f3520ef750af5654b905f068c6a26232bb4912c6bb2f62052e5699f04cd5dd31"
+    },
+    "python_wheel": {
+      "url": "https://files.pythonhosted.org/packages/93/eb/24d94db0530029649b266ec3ca8221c07f2754f56046181f13237d2518f5/magika-1.0.3-py3-none-any.whl",
+      "size": 2969548,
+      "sha256": "938d8e033953f2ddeb8c35dc423aa289ca116bfa7a71a778f6e77460f9025803"
+    },
+    "source_archive": {
+      "url": "https://files.pythonhosted.org/packages/00/be/fa7d512ec15763ad7d8ba083e39bb445fa969ce5159361fa449a02569cf9/magika-1.0.3.tar.gz",
+      "size": 3041970,
+      "sha256": "ad3216012f6dd337be34c23ae3dfab36f0623bc62fbfb329f9a1852c9ad40304"
+    },
+    "mineru_guess_source": {
+      "path": "MinerU/third_party/MinerU/mineru/utils/guess_suffix_or_lang.py",
+      "size": 6586,
+      "sha256": "47a3264beb50840b4496439151c06279911cd0773455eaef50fe802132c9dd5a"
+    },
+    "mineru_clean_source": {
+      "path": "MinerU/third_party/MinerU/mineru/utils/visual_magic_model_utils.py",
+      "size": 26106,
+      "sha256": "7277e88f84cfde689d790f03903fb8f6799a2bedd98d2efa0a8140bb09474f95"
+    },
+    "audited_not_deployed": {
+      "path_in_python_wheel": "magika/config/content_types_kb.min.json",
+      "size": 44768,
+      "sha256": "75208adba69bc0556403b62b32ef3ccf8b5ce494411780845852e52e6583a10d",
+      "reason": "The narrow MinerU API returns only a label. Low-confidence text becomes txt; low-confidence binary becomes unknown; MinerU then maps unknown to txt. No MIME/group/description/extension metadata is observed by the caller."
+    }
+  },
+  "payload_files": [
+    {"path":"third_party/common/onnxruntime-1.28.0/GIT_COMMIT_ID","size":43,"sha256":"c7b502512e05a29cca9fb4e220d5d847e67075173fdce3a125166fc60bfe4491"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/cpu_provider_factory.h","size":416,"sha256":"e2f658eeace78d79a8df82f233dcdeea135db498a77766156054bfc0d1d06c21"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_c_api.h","size":403673,"sha256":"e3a01cdb382b2ba52267bf8a1a40d60b1197a1bac4da55667fe4d84e244f589a"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_cxx_api.h","size":172735,"sha256":"0765fc56924999b06b4c01f665d8fbd368582fed7a856a22ce1ed686a73e8be2"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_cxx_inline.h","size":161868,"sha256":"e6c0478ab86467cfb4ac8694df3081ad1d42585c16f024d107638fb197e92f4a"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_env_config_keys.h","size":1339,"sha256":"e56d37fd1e6497e9c8e8e5bd81732cd5414b4dc0867f3e8badb60101502d0435"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_ep_c_api.h","size":156087,"sha256":"612dd6c3b5c7fa8f936fe07e1d8da4dc4727890011305b4f67279b132aa1c8e0"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_ep_device_ep_metadata_keys.h","size":1907,"sha256":"d2970b305076cefa0e5b740758ac9b67c2450f7cebc89e2f7db6813c735a85d2"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_error_code.h","size":2873,"sha256":"6690bf0df3f7a7a9c4f38597dc3232042e432b48ea166cb5672f72a49d32b742"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_experimental_c_api.h","size":7814,"sha256":"6639049e3ae65548c251bebfc53ccedc2f2f275ebc1c342cbe6180f35a4c84cc"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_experimental_c_api.inc","size":23401,"sha256":"c48203a7c2081054349d3318adccb8fdd8252e8a80ee828cbcf69bfc3ff409fa"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_experimental_cxx_api.h","size":8229,"sha256":"b998fbb7abd4ce0760a6b2fecc731c68bdf7932327fe9c1aa8edb0b53747e3aa"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_float16.h","size":18528,"sha256":"9b45e1bc0fe19d9d53f272b168f5cab616e26eb00136c3a1b78f394c9b1b6757"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_lite_custom_op.h","size":63413,"sha256":"d65413bf8ca63fb71efcb0f9e14f996736367cf72ea3421d18b3370def1e483b"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_run_options_config_keys.h","size":3006,"sha256":"38cfec5817e67990f242bbf7177db730a4d60f5ed256b4832f02ac38c3fd6d06"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_session_options_config_keys.h","size":42393,"sha256":"79d27ec166bfca980e2349ec7240b7b36e7a7501165c310ca04750cbba5edcd0"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_training_c_api.h","size":36508,"sha256":"f920338841fce3ba9976882a8ec20155462298c12486a4e0bb6af29306d26330"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_training_cxx_api.h","size":19993,"sha256":"c4e31c020e3a087c751b31358bb97891ff1c11c5c6c47565e2fc2c1200ecf844"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/onnxruntime_training_cxx_inline.h","size":13166,"sha256":"0a1b67caad64a7fc5a7aa489c8e4dc57ba11ba2d3c18b398a81ee3d864a50383"},
+    {"path":"third_party/common/onnxruntime-1.28.0/include/provider_options.h","size":498,"sha256":"74f8accd5b30fbfe8abb24ca279e634657b446bf5b9be520badaaebcea63cade"},
+    {"path":"third_party/common/onnxruntime-1.28.0/LICENSE","size":1094,"sha256":"c250d6278f0b47a6439fb7592b08b58a55eb9f535aa49a1db63211c3f982b674"},
+    {"path":"third_party/common/onnxruntime-1.28.0/Privacy.md","size":2490,"sha256":"bfb7712b075f3f07e3ebee5dc2a296d1de32dbf71ad28663f73d1538cb6c3b08"},
+    {"path":"third_party/common/onnxruntime-1.28.0/README.md","size":3164,"sha256":"2f4fe7bd0ce28472fc7b61f70b4e1978c3858177a7d02e63dc8d72be6ee383eb"},
+    {"path":"third_party/common/onnxruntime-1.28.0/ThirdPartyNotices.txt","size":331175,"sha256":"fb0af774b4d7cffc5b9d046f2aaeade2f37df2f80abf8033c95dfffcc77a8866"},
+    {"path":"third_party/common/onnxruntime-1.28.0/VERSION_NUMBER","size":8,"sha256":"b056072036db8b4f37fbdb84a6c45992ceea413fd481b7a0489288c0708f2fae"},
+    {"path":"third_party/windows-x64/onnxruntime-1.28.0/bin/onnxruntime.dll","size":15809848,"sha256":"18370c375f07357fa5874344a9d9ac17e6b6fe1eb18b1dd209d79483b4470257"},
+    {"path":"third_party/windows-x64/onnxruntime-1.28.0/lib/onnxruntime.lib","size":2124,"sha256":"b9fc3cd678257d88a111b0773ede4bfceaf0fe95daab4379f2b2b37348a68781"},
+    {"path":"third_party/macos-arm64/onnxruntime-1.28.0/GIT_COMMIT_ID","size":41,"sha256":"40f2814e70e7d02460565104d089b42cf9e1df137495a4eae35654c4425840d7"},
+    {"path":"third_party/macos-arm64/onnxruntime-1.28.0/lib/libonnxruntime.1.28.0.dylib","size":39312136,"sha256":"dc19bbcb2f5c9fb3c68b4f9248aa0a35065ff702c5dbeae75eac54a74da97b6d"},
+    {"path":"third_party/macos-arm64/onnxruntime-1.28.0/LICENSE","size":1073,"sha256":"2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"},
+    {"path":"third_party/macos-arm64/onnxruntime-1.28.0/ThirdPartyNotices.txt","size":325054,"sha256":"0e07b95f3a8d6230037707c5c4a2b554d12c4cb67369669ac255635528ffcee2"},
+    {"path":"third_party/macos-arm64/onnxruntime-1.28.0/VERSION_NUMBER","size":7,"sha256":"229394bb3bac6e15d186324b7cbc90560803df8d7ee438a584118c4821b44e93"},
+    {"path":"models/magika/standard_v3_3/config.min.json","size":2142,"sha256":"991a6fb760c0431e5c0350a487ba4bd89dee43b74d53b77cc88106469d99617a"},
+    {"path":"models/magika/standard_v3_3/LICENSE.Apache-2.0.txt","size":11357,"sha256":"58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd"},
+    {"path":"models/magika/standard_v3_3/model.onnx","size":3163737,"sha256":"fe2d2eb49c5f88a9e0a6c048e15d6ffdf86235519c2afc535044de433169ec8c"},
+    {"path":"models/magika/standard_v3_3/README.upstream.md","size":16899,"sha256":"355816f847dba572cc673a6afa6c4ded31118965ab41566b817a678df16b0777"}
+  ]
+}

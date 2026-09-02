@@ -1,0 +1,10 @@
+{
+  "model_dir": "models/qwen3-asr-1.7b",
+  "sample_rate": 16000,
+  "slice_target_sec": 45,
+  "slice_max_sec": 120,
+  "slice_overlap_sec": 0.8,
+  "cuda_required": true,
+  "gpu_layers": -1,
+  "model": "Qwen3-ASR-1.7B-BF16"
+}

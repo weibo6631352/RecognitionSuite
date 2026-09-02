@@ -1,0 +1,11 @@
+{
+  "models-dir": {
+    "vlm": "models/vlm",
+    "layout": "models/layout/PP-DocLayoutV2",
+    "ocr": "models/ocr",
+    "fasttext": "models/fasttext",
+    "magika": "models/magika/standard_v3_3"
+  },
+  "model-source": "local",
+  "config_version": "1.3.4"
+}

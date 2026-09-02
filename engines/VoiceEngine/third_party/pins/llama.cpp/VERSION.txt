@@ -1,0 +1,5 @@
+llama.cpp + libmtmd
+commit: 9731ad3f29da96f588711a0d1eb08cf210721e16
+date: 2026-08-18
+note: mtmd-capable pin that lists Qwen3-ASR-1.7B in docs/multimodal.md
+local tree: third_party/common/llama.cpp

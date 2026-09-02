@@ -1,0 +1,89 @@
+{
+  "schema": "RecognitionStudio-ImageReference/1",
+  "domain": "validation-only",
+  "prohibited_usage": "Must not be imported into a business task project or converted into a mission/load package.",
+  "annotation_policy": {
+    "kind": "human-reviewed-visible-content",
+    "scoring_scope": "Only expected_text and expected_fields are scored. Masked, clipped, blank and visually ambiguous cells are excluded.",
+    "normalization": "Unicode NFC; preserve punctuation, digits and case; normalize CRLF to LF; trim outer whitespace",
+    "masked_tokens": ["x", "xx", "xxx", "xxxx", "xxxxx"],
+    "warning": "This is a manually reviewed business validation subset, not yet a full-page contract acceptance transcription."
+  },
+  "samples": [
+    {
+      "image": "../微信图片_20260604104758_14_53.jpg",
+      "rotation_clockwise": 0,
+      "business_type": "机场仪表与导航参数",
+      "layout": {"tables": 1, "wide_table": true, "perspective": true},
+      "expected_fields": ["机场下滑角", "场压有效", "场压", "MLS参数有效", "MLS波道号", "决断高度", "仪表参数有效", "ILS波道号", "ILS航道宽度", "ILS下滑宽度", "罗盘参数有效", "罗盘远台频率", "罗盘近台频率"],
+      "expected_text": ["序号", "航向信标", "下滑信标", "有效", "无效", "无"],
+      "exclude": ["所有脱敏频率及波道值", "模糊或被透视压缩的数字单元格", "空白单元格"],
+      "validation_tags": ["wide-table", "perspective", "low-contrast", "table-structure"]
+    },
+    {
+      "image": "../微信图片_20260604104759_15_53.jpg",
+      "rotation_clockwise": 0,
+      "business_type": "机场与通信频率",
+      "layout": {"tables": 2, "wide_table": false, "perspective": false},
+      "expected_fields": ["1", "xx机场", "xx端", "xxx频率表", "波道", "机场名称", "频率(MHZ)"],
+      "expected_rows": [["一波道", "xxx", "xxx.xx"], ["二波道", "xxx", "xxx.xx"], ["三波道", "xxx", "xxx.xx"]],
+      "exclude": ["脱敏占位符的真实内容", "页面下部背面透印"],
+      "validation_tags": ["multiple-tables", "merged-cells", "show-through"]
+    },
+    {
+      "image": "../微信图片_20260604104800_16_53.jpg",
+      "rotation_clockwise": 90,
+      "business_type": "机场位置与下滑角",
+      "layout": {"tables": 1, "wide_table": true, "dense": true},
+      "expected_fields": ["机场名称", "左右转进场", "跑道长度有效", "机场正向着陆点经度", "机场正向着陆点纬度", "机场反向着陆点经度", "机场反向着陆点纬度", "机场下滑角有效", "机场下滑角"],
+      "expected_text": ["自动", "有效", "度", "分", "秒"],
+      "exclude": ["被脱敏或肉眼无法唯一确认的经纬度数字", "裁切的最右侧单元格"],
+      "validation_tags": ["rotation-90", "dense-table", "dms-coordinate", "gpu-memory-pressure"],
+      "observed_baseline": {"ScanEngine_medium": "failed", "reason": "GPU out of memory at visual token length 7884"}
+    },
+    {
+      "image": "../微信图片_20260604104801_17_53.jpg",
+      "rotation_clockwise": 90,
+      "business_type": "TACAN台站参数",
+      "layout": {"tables": 1, "wide_table": true, "dense": true},
+      "expected_fields": ["TACAN参数有效", "TACAN波段、波道号有效", "TACAN台站波段", "TACAN台站波道号", "TACAN台站经纬度有效", "TACAN台站经度", "TACAN台站纬度", "TACAN台站高度有效", "TACAN台站高度"],
+      "expected_text": ["有效", "无效", "度", "分", "秒"],
+      "exclude": ["脱敏的台站标识", "肉眼无法唯一确认的坐标数字", "被裁切的高度列"],
+      "validation_tags": ["rotation-90", "tacan", "dms-coordinate", "validity-flags"]
+    },
+    {
+      "image": "../微信图片_20260604104802_18_53.jpg",
+      "rotation_clockwise": 90,
+      "business_type": "跑道进场与时间参数",
+      "layout": {"tables": 1, "wide_table": true, "dense": true},
+      "expected_fields": ["跑道真航向有效", "切入航向/跑道真航向", "跑道磁航向", "切入距离/FAF点距离有效", "切入距离/FAF点距离", "TOT有效", "TOT", "磁差有效", "磁差"],
+      "expected_text": ["有效", "无效", "00:00", "度", "分", "秒"],
+      "exclude": ["肉眼无法唯一确认的角度数值", "右侧被裁切字段"],
+      "validation_tags": ["rotation-90", "runway", "time-field", "gpu-memory-pressure"],
+      "observed_baseline": {"ScanEngine_medium": "failed", "reason": "GPU out of memory at visual token length 8004"}
+    },
+    {
+      "image": "../微信图片_20260604104802_19_53.jpg",
+      "rotation_clockwise": 90,
+      "business_type": "航路点与机场连接关系",
+      "layout": {"tables": 1, "wide_table": true, "dense": true},
+      "expected_fields": ["航路点号有效", "航路点号/机场号", "属性", "连接属性", "名称有效", "名称", "编码号有效", "编码号", "经纬度有效", "经度", "纬度", "高度有效", "高度", "切入航向/跑道真航向"],
+      "expected_sequence": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28],
+      "expected_categories": ["航路点", "机场", "连接点", "非连接点", "有效", "无效"],
+      "exclude": ["脱敏名称和编码号", "肉眼无法唯一确认的经纬度及高度值", "右侧裁切字段"],
+      "validation_tags": ["rotation-90", "route-point", "airport", "sequence", "gpu-memory-pressure"],
+      "observed_baseline": {"ScanEngine_medium": "failed", "reason": "GPU out of memory at visual token length 7884"}
+    },
+    {
+      "image": "../微信图片_20260604104803_20_53.jpg",
+      "rotation_clockwise": 90,
+      "business_type": "任务计划软件字段表单",
+      "layout": {"forms": 1, "columns": 3, "dense": true},
+      "expected_fields": ["航路点号有效", "航路点号/机场号", "属性", "连接属性", "名称有效", "名称", "编码号有效", "编码号", "经纬度有效", "经度(Deg)", "纬度(Deg)", "高度有效", "高度(m)", "切入航向/跑道真航向有效", "切入航向/跑道真航向(Deg)", "跑道磁航向(Deg)", "切入距离/FAF点距离有效", "切入距离/FAF点距离(m)", "TOT有效", "TOT", "磁差有效", "磁差(Deg)", "TACAN参数有效", "TACAN波段、波道号有效", "TACAN台站波段", "TACAN台站波道号", "TACAN台站经纬度有效", "TACAN台站经度(Deg)", "TACAN台站纬度(Deg)", "TACAN台站高度有效", "TACAN台站高度(m)", "左右转进场", "跑道长度有效", "机场跑道长度(m)", "机场正向着陆点经度(Deg)", "机场正向着陆点纬度(Deg)", "机场反向着陆点经度(Deg)", "机场反向着陆点纬度(Deg)", "机场下滑角有效", "机场下滑角(Deg)", "场压有效", "场压(mmHg)", "MLS参数有效", "MLS波道号", "决断高度(m)", "仪表参数有效", "ILS波道号", "ILS航道宽度(Deg,W=2×0.128)", "ILS下滑宽度(Deg,W=2arctg105ft(L),W≤6°)", "罗盘参数有效", "罗盘远台频率(KHz)", "罗盘近台频率(KHz)"],
+      "expected_text": ["有效", "无效", "机场", "非连接点", "向左机场", "自动", "确认", "取消"],
+      "exclude": ["所有脱敏值", "灰显控件内无法确认的值", "窗口边缘裁切内容"],
+      "validation_tags": ["rotation-90", "form-layout", "field-dictionary", "gpu-memory-pressure"],
+      "observed_baseline": {"ScanEngine_medium": "failed", "reason": "GPU out of memory at visual token length 8060"}
+    }
+  ]
+}

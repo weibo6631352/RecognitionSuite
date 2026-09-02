@@ -1,0 +1,28 @@
+# 构建
+build/
+cmake-build-*/
+compile_commands.json
+CMakeUserPresets.json
+
+# IDE / 系统
+.cache/
+.idea/
+.vscode/
+*.user
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 本地配置
+config.local.json
+
+logs/
+
+# 官方权重和平台运行库由 Git LFS 入库（不再忽略 ONNX）。
+
+# 会话草稿，不入库
+docs/agent-*-report.md
+
+# 脚本本地下载的离线包
+script/windows/offline/

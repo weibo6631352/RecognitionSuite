@@ -1,0 +1,22 @@
+*.safetensors filter=lfs diff=lfs merge=lfs -text
+*.safetensors.part* filter=lfs diff=lfs merge=lfs -text
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.metallib filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.onnx filter=lfs diff=lfs merge=lfs -text
+*.lib -text
+third_party/windows-x64/mlx/lib/mlx.lib filter=lfs diff=lfs merge=lfs -text
+third_party/common/fasttext-0.9.2/** -text
+models/fasttext/lid.176.ftz -text
+models/fasttext/NOTICE.MD -text
+models/fasttext/LICENSE.CC-BY-SA-3.0.txt -text
+models/fasttext/LICENSE.fastText-MIT.txt -text
+models/fasttext/LICENSE.fast-langdetect-MIT.txt -text
+models/fasttext/LICENSE.fasttext-langdetect-MIT.txt -text
+models/fasttext/NOTICE.fast-langdetect.md -text
+third_party/common/onnxruntime-1.28.0/** -text -diff
+third_party/windows-x64/onnxruntime-1.28.0/** -text -diff
+third_party/macos-arm64/onnxruntime-1.28.0/** -text -diff
+models/magika/standard_v3_3/** -text -diff
+third_party/SCANENGINE_MAGIKA_ORT_LOCK.json -text
+tools/alignment/mlx_cuda_probe/** -text

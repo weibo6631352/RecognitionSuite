@@ -1,0 +1,4 @@
+Mac 脚本尚未提供。正式 Mac 构建仍用：
+
+  cmake --preset macos-arm64-mlx
+  cmake --build build/macos-arm64-mlx

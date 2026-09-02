@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>styles.qss</file>
+        <file alias="icons/scanengine.png">icons/scanengine.png</file>
+    </qresource>
+</RCC>

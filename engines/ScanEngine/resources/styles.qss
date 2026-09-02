@@ -1,0 +1,130 @@
+/* ScanEngine: formal navy interface with a restrained cyan accent. */
+
+* {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+
+QMainWindow, QWidget#centralRoot {
+    background: #f4f6f8;
+    color: #18212b;
+}
+
+QFrame#panel {
+    background: #ffffff;
+    border: 1px solid #d7dde5;
+    border-radius: 4px;
+}
+
+QLabel#headerTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: #17324d;
+}
+
+QLabel#headerSubtitle {
+    font-size: 12px;
+    color: #66717d;
+}
+
+QPushButton {
+    border: 1px solid #c8d0d9;
+    border-radius: 4px;
+    padding: 7px 13px;
+    background: #ffffff;
+}
+
+QPushButton:hover {
+    background: #f1f4f7;
+}
+
+QPushButton#primaryButton {
+    background: #173f67;
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+QPushButton#primaryButton:hover {
+    background: #123451;
+}
+
+QPushButton#primaryButton:disabled {
+    background: #9ba9b7;
+    color: #f7f9fb;
+}
+
+QComboBox {
+    border: 1px solid #c8d0d9;
+    border-radius: 4px;
+    padding: 6px 10px;
+    background: #ffffff;
+}
+
+QComboBox:hover {
+    background: #f1f4f7;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 22px;
+}
+
+QPlainTextEdit, QTextBrowser, QListWidget {
+    border: 1px solid #cfd6de;
+    border-radius: 3px;
+    background: #ffffff;
+    padding: 4px;
+}
+
+QTabWidget::pane {
+    border: 1px solid #d7dde5;
+    border-radius: 3px;
+    background: #ffffff;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background: #e9edf1;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    padding: 7px 13px;
+    margin-right: 2px;
+}
+
+QTabBar::tab:selected {
+    background: #ffffff;
+    font-weight: 600;
+}
+
+QLabel#statusText {
+    color: #173f67;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+QLabel#optionInfo {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+QListWidget#resultFiles {
+    min-height: 64px;
+    max-height: 140px;
+}
+
+QFrame#dropZone {
+    border: 1px dashed #9ba9b7;
+    border-radius: 4px;
+    background: #f8fafb;
+}
+
+QFrame#dropZone[dragActive="true"] {
+    border-color: #173f67;
+    background: #eef2f6;
+}
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}

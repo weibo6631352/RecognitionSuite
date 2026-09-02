@@ -1,0 +1,39 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "win-qt5.12.9-msvc-cuda",
+      "displayName": "Windows Qt 5.12.9 / VS 2022 v143 x64 / CUDA 12.9 RTX 40+50",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/win-qt5.12.9-msvc-cuda",
+      "environment": {
+        "PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64/bin;$penv{PATH}"
+      },
+      "cacheVariables": {
+        "CMAKE_GENERATOR_INSTANCE": "C:/Program Files/Microsoft Visual Studio/2022/Professional,version=17.14.37614.0",
+        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64",
+        "VOICEENGINE_QT_ROOT": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64",
+        "VOICEENGINE_CUDA_ROOT": "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9",
+        "VOICEENGINE_CUDA_ARCHITECTURES": "89;120"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "toolset": {
+        "value": "v143,host=x64,cuda=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9",
+        "strategy": "set"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "win-qt5.12.9-msvc-cuda",
+      "displayName": "Build VoiceEngine Windows GPU product",
+      "configurePreset": "win-qt5.12.9-msvc-cuda",
+      "configuration": "Release",
+      "inheritConfigureEnvironment": true,
+      "jobs": 8
+    }
+  ]
+}

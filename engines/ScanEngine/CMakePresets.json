@@ -1,0 +1,74 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "win-qt5.12.9-msvc-mlx-cuda",
+      "displayName": "Windows Qt 5.12.9 / VS 2022 v143 x64 / MLX CUDA",
+      "description": "Windows GPU product. Links the prebuilt MLX CUDA library under third_party/windows-x64/mlx/.",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/win-qt5.12.9-msvc-mlx-cuda",
+      "environment": {
+        "PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64/bin;$penv{PATH}"
+      },
+      "cacheVariables": {
+        "CMAKE_GENERATOR_INSTANCE": "C:/Program Files/Microsoft Visual Studio/2022/Professional,version=17.14.37614.0",
+        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64",
+        "SCANENGINE_QT_ROOT": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64",
+        "SCANENGINE_ENABLE_MLX_CUDA": "ON"
+      },
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "toolset": {
+        "value": "v143,host=x64,cuda=C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.9",
+        "strategy": "set"
+      }
+    },
+    {
+      "name": "macos-qt5",
+      "displayName": "macOS native locked Qt 5.15.2 (dev)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/macos-qt5",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_PREFIX_PATH": "$env{SCANENGINE_MACOS_QT_ROOT}",
+        "SCANENGINE_MACOS_QT_ROOT": "$env{SCANENGINE_MACOS_QT_ROOT}",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "14.0",
+        "SCANENGINE_ENABLE_MLX": "OFF"
+      }
+    },
+    {
+      "name": "macos-arm64-mlx",
+      "displayName": "macOS arm64 locked Qt 5.15.2 + official libmlx Metal",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/macos-arm64-mlx",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_PREFIX_PATH": "$env{SCANENGINE_MACOS_QT_ROOT}",
+        "SCANENGINE_MACOS_QT_ROOT": "$env{SCANENGINE_MACOS_QT_ROOT}",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "26.0",
+        "SCANENGINE_ENABLE_MLX": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "win-qt5.12.9-msvc-mlx-cuda",
+      "displayName": "Build Windows GPU product",
+      "configurePreset": "win-qt5.12.9-msvc-mlx-cuda",
+      "configuration": "Release",
+      "inheritConfigureEnvironment": true,
+      "targets": [
+        "deploy-bin",
+        "deploy-cuda-runtime",
+        "ScanEngineSDK",
+        "ScanEngineTool",
+        "ScanEngine"
+      ],
+      "jobs": 4
+    }
+  ]
+}
