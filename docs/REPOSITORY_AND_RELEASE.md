@@ -39,7 +39,7 @@ SDK 应包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/` 和
 - `licenses/voiceengine/` 与 `licenses/scanengine/`；
 - 可写的 `output/`。
 
-最终运行包不应包含 `.git/`、源码、SDK 的 `include/lib/cmake/examples`、构建中间文件或测试数据。两个组件都携带 Qt/CUDA 的部分重复文件，体积会较大；当前优先保持 DLL 搜索路径和 SDK 运行时隔离，不在首版做跨组件去重。
+最终运行包不应包含 `.git/`、源码、SDK 的公共头文件、`lib/cmake/examples`、构建中间文件或测试数据。`components/scanengine/include/cccl` 与 `include/cuda` 是 MLX 在目标机执行 NVRTC JIT 所需的私有运行时数据，不是供应用开发者使用的 SDK 头文件，因此必须保留。两个组件都携带 Qt/CUDA 的部分重复文件，体积会较大；当前优先保持 DLL 搜索路径和 SDK 运行时隔离，不在首版做跨组件去重。
 
 ## 发布检查
 

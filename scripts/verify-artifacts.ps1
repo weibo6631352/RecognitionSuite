@@ -16,6 +16,14 @@ function Require-Path {
     }
 }
 
+function Forbid-Path {
+    param([Parameter(Mandatory)] [string]$Root, [Parameter(Mandatory)] [string]$RelativePath)
+    $path = Join-Path $Root $RelativePath
+    if (Test-Path -LiteralPath $path) {
+        $failures.Add("Unexpected development or repository path: $path")
+    }
+}
+
 function Require-MatchingFile {
     param([Parameter(Mandatory)] [string]$Root, [Parameter(Mandatory)] [string]$Filter)
     if (-not (Test-Path -LiteralPath $Root) -or
@@ -26,6 +34,7 @@ function Require-MatchingFile {
 
 $scanSdkPaths = @(
     'bin/ScanEngineCore.dll', 'bin/scanengine.json',
+    'bin/include/cccl', 'bin/include/cuda',
     'include/scanengine/scanengine_api.h', 'include/scanengine/scanengine.hpp',
     'include/scanengine/scanengine_runtime.h', 'include/scanengine/scanengine_version.h',
     'lib/ScanEngineCore.lib', 'lib/ScanEngineRuntime.lib',
@@ -50,10 +59,27 @@ Require-MatchingFile -Root (Join-Path $voiceSdk 'bin/runtimes/ffmpeg') -Filter '
 $studioPaths = @(
     'RecognitionStudio.exe',
     'components/scanengine/ScanEngineCore.dll',
+    'components/scanengine/include/cccl',
+    'components/scanengine/include/cuda',
     'components/voiceengine/VoiceEngineCore.dll',
     'licenses/scanengine', 'licenses/voiceengine', 'output'
 )
 foreach ($path in $studioPaths) { Require-Path -Root $studioBin -RelativePath $path }
+
+$forbiddenStudioPaths = @(
+    '.git', 'include', 'lib', 'cmake', 'examples', 'testdata',
+    'components/scanengine/.git',
+    'components/scanengine/include/scanengine',
+    'components/scanengine/lib',
+    'components/scanengine/cmake',
+    'components/scanengine/examples',
+    'components/voiceengine/.git',
+    'components/voiceengine/include',
+    'components/voiceengine/lib',
+    'components/voiceengine/cmake',
+    'components/voiceengine/examples'
+)
+foreach ($path in $forbiddenStudioPaths) { Forbid-Path -Root $studioBin -RelativePath $path }
 
 if (Test-Path -LiteralPath $studioBin) {
     $legacyFiles = Get-ChildItem -LiteralPath $studioBin -File -Recurse -ErrorAction SilentlyContinue |

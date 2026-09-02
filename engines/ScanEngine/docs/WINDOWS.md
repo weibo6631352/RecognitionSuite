@@ -6,7 +6,7 @@
 |---|---|
 | 生成器 | Visual Studio 17 2022，`v143,host=x64` |
 | 业务 C++ | C++17；MLX bridge C++20 |
-| Qt | `C:\Qt\5.12.9\msvc2017_64` |
+| Qt | `C:\Qt\Qt5.12.9\5.12.9\msvc2017_64` |
 | CUDA | `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9` |
 | cuDNN | 9.9.0.52，装在 CUDA 根目录 |
 | CMake | ≥ 3.25（本机常用 3.30.5） |

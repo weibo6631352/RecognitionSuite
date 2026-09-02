@@ -71,7 +71,7 @@ ScanEngineTool.exe parse --input 某图.png
 |---|---|
 | Git + Git LFS | 克隆后执行 `git lfs pull` |
 | Visual Studio 2022 | v143 x64（Build Tools 即可，不要 MinGW） |
-| Qt | `C:\Qt\5.12.9\msvc2017_64` |
+| Qt | `C:\Qt\Qt5.12.9\5.12.9\msvc2017_64` |
 | CMake | ≥ 3.25（常用 3.30.5，可用 `C:\Qt\Tools\CMake_64`） |
 | CUDA Toolkit | 12.9，默认装在 `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9` |
 | cuDNN | 9.9.0.52，头文件和 `cudnn64_9.dll` 放进上述 CUDA 根目录 |

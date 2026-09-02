@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'Engines', 'Studio')]
+    [ValidateSet('All', 'Engines', 'ScanEngine', 'VoiceEngine', 'Studio')]
     [string]$Target = 'All',
     [switch]$ConfigureOnly
 )
@@ -37,22 +37,31 @@ function Invoke-CMakePreset {
     }
 }
 
-if ($Target -in @('All', 'Engines')) {
+if ($Target -in @('All', 'Engines', 'ScanEngine')) {
     Invoke-CMakePreset -Repository 'engines/ScanEngine' -Preset 'win-qt5.12.9-msvc-mlx-cuda'
+}
+
+if ($Target -in @('All', 'Engines', 'VoiceEngine')) {
     Invoke-CMakePreset -Repository 'engines/VoiceEngine' -Preset 'win-qt5.12.9-msvc-cuda'
 }
 
 if ($Target -in @('All', 'Studio')) {
-    if ($Target -eq 'Studio' -and -not $ConfigureOnly) {
-        $requiredSdkConfigs = @(
-            'engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk/cmake/ScanEngineConfig.cmake',
-            'engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk/cmake/VoiceEngineConfig.cmake'
-        )
+    $requiredSdkConfigs = @(
+        'engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk/cmake/ScanEngineConfig.cmake',
+        'engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk/cmake/VoiceEngineConfig.cmake'
+    )
+    $missingSdkConfigs = @(
         foreach ($relativePath in $requiredSdkConfigs) {
-            if (-not (Test-Path -LiteralPath (Join-Path $suiteRoot $relativePath))) {
-                throw "Build the engine SDKs first; missing $relativePath"
-            }
+            if (-not (Test-Path -LiteralPath (Join-Path $suiteRoot $relativePath))) { $relativePath }
         }
+    )
+    if ($missingSdkConfigs.Count -gt 0 -and $Target -eq 'All' -and $ConfigureOnly) {
+        Write-Warning 'Skipping RecognitionStudio configure: configure-only does not create the engine SDK packages.'
     }
-    Invoke-CMakePreset -Repository 'apps/RecognitionStudio' -Preset 'windows-msvc-qt5'
+    elseif ($missingSdkConfigs.Count -gt 0) {
+        throw "Build the engine SDKs first; missing $($missingSdkConfigs -join ', ')"
+    }
+    else {
+        Invoke-CMakePreset -Repository 'apps/RecognitionStudio' -Preset 'windows-msvc-qt5'
+    }
 }
