@@ -2,12 +2,14 @@
 
 #include <QCryptographicHash>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRegularExpression>
 #include <QSaveFile>
+#include <QSet>
 #include <QTextDocument>
 
 #include <algorithm>
@@ -341,14 +343,272 @@ ConfidenceSummary extractVoiceConfidence(const QByteArray& resultJson) {
     return summarize(scores, QStringLiteral("decoder_token_geometric_mean"));
 }
 
-QString sha256File(const QString& path) {
+QString sha256File(const QString& path, const std::atomic_bool* cancelled) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly))
         return {};
     QCryptographicHash hash(QCryptographicHash::Sha256);
-    if (!hash.addData(&file))
-        return {};
+    QByteArray buffer;
+    buffer.resize(8 * 1024 * 1024);
+    for (;;) {
+        if (cancelled && cancelled->load())
+            return {};
+        const qint64 count = file.read(buffer.data(), buffer.size());
+        if (count < 0)
+            return {};
+        if (count == 0)
+            break;
+        hash.addData(buffer.constData(), static_cast<int>(count));
+    }
     return QString::fromLatin1(hash.result().toHex());
+}
+
+QString sha256Bytes(const QByteArray& value) {
+    return QString::fromLatin1(
+        QCryptographicHash::hash(value, QCryptographicHash::Sha256).toHex());
+}
+
+bool loadSha256Manifest(const QString& path,
+                        QMap<QString, QString>* entries,
+                        QString* error) {
+    if (!entries) {
+        if (error)
+            *error = QStringLiteral("校验清单输出参数为空");
+        return false;
+    }
+    entries->clear();
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (error) {
+            *error = QStringLiteral("无法读取 SHA-256 清单：%1（%2）")
+                         .arg(path, file.errorString());
+        }
+        return false;
+    }
+    const QRegularExpression linePattern(
+        QStringLiteral("^([0-9a-fA-F]{64})[\\t ]+(.+?)\\r?$"));
+    int lineNumber = 0;
+    while (!file.atEnd()) {
+        ++lineNumber;
+        const QString line = QString::fromUtf8(file.readLine());
+        if (line.trimmed().isEmpty())
+            continue;
+        const QRegularExpressionMatch match = linePattern.match(line);
+        if (!match.hasMatch()) {
+            if (error) {
+                *error = QStringLiteral("SHA-256 清单第 %1 行格式无效：%2")
+                             .arg(lineNumber)
+                             .arg(path);
+            }
+            entries->clear();
+            return false;
+        }
+        QString relativePath = QDir::fromNativeSeparators(
+            match.captured(2).trimmed());
+        relativePath = QDir::cleanPath(relativePath);
+        const QStringList components = relativePath.split(
+            QLatin1Char('/'), QString::SkipEmptyParts);
+        if (relativePath.isEmpty() || relativePath == QLatin1String(".")
+            || QDir::isAbsolutePath(relativePath)
+            || components.contains(QStringLiteral(".."))) {
+            if (error) {
+                *error = QStringLiteral("SHA-256 清单包含不安全路径：%1")
+                             .arg(relativePath);
+            }
+            entries->clear();
+            return false;
+        }
+        if (entries->contains(relativePath)) {
+            if (error) {
+                *error = QStringLiteral("SHA-256 清单包含重复路径：%1")
+                             .arg(relativePath);
+            }
+            entries->clear();
+            return false;
+        }
+        entries->insert(relativePath, match.captured(1).toLower());
+    }
+    if (entries->isEmpty()) {
+        if (error)
+            *error = QStringLiteral("SHA-256 清单不包含任何条目：%1").arg(path);
+        return false;
+    }
+    if (error)
+        error->clear();
+    return true;
+}
+
+RuntimePayloadVerification verifyRuntimePayload(
+    const QString& runtimeRoot,
+    const QString& checksumManifestPath,
+    const QString& expectedChecksumManifestSha256,
+    const QVector<RuntimeFileExpectation>& expectations,
+    const std::atomic_bool* cancelled) {
+    RuntimePayloadVerification verification;
+    QJsonObject evidence;
+    const QString expectedManifestHash =
+        expectedChecksumManifestSha256.trimmed().toLower();
+    const QString actualManifestHash = sha256File(
+        checksumManifestPath, cancelled);
+    const QDir runtimeDirectory(runtimeRoot);
+    QString checksumRelativePath = QDir::fromNativeSeparators(
+        runtimeDirectory.relativeFilePath(
+            QFileInfo(checksumManifestPath).absoluteFilePath()));
+    checksumRelativePath = QDir::cleanPath(checksumRelativePath);
+    const QStringList checksumComponents = checksumRelativePath.split(
+        QLatin1Char('/'), QString::SkipEmptyParts);
+    const bool checksumInsideRuntime = !checksumRelativePath.isEmpty()
+        && checksumRelativePath != QLatin1String(".")
+        && !QDir::isAbsolutePath(checksumRelativePath)
+        && !checksumComponents.contains(QStringLiteral(".."));
+    const bool manifestHashValid = checksumInsideRuntime
+        && QRegularExpression(QStringLiteral("^[0-9a-f]{64}$"))
+            .match(expectedManifestHash).hasMatch()
+        && actualManifestHash == expectedManifestHash;
+    evidence.insert(QStringLiteral("runtime_root"),
+                    QDir(runtimeRoot).absolutePath());
+    evidence.insert(QStringLiteral("checksum_manifest_path"),
+                    checksumManifestPath);
+    evidence.insert(QStringLiteral("expected_checksum_manifest_sha256"),
+                    expectedManifestHash);
+    evidence.insert(QStringLiteral("actual_checksum_manifest_sha256"),
+                    actualManifestHash);
+    evidence.insert(QStringLiteral("checksum_manifest_matches_build_anchor"),
+                    manifestHashValid);
+    evidence.insert(QStringLiteral("checksum_manifest_inside_runtime"),
+                    checksumInsideRuntime);
+
+    bool filesValid = !expectations.isEmpty();
+    bool exactFileSetValid = checksumInsideRuntime;
+    qint64 checkedBytes = 0;
+    QJsonArray files;
+    QStringList errors;
+    QSet<QString> expectedRuntimePaths;
+    if (checksumInsideRuntime)
+        expectedRuntimePaths.insert(checksumRelativePath);
+    if (!manifestHashValid)
+        errors.append(QStringLiteral("SDK 校验清单与构建时锚点不匹配"));
+    if (expectations.isEmpty())
+        errors.append(QStringLiteral("没有需要校验的运行时文件"));
+    const QRegularExpression hashPattern(QStringLiteral("^[0-9a-f]{64}$"));
+    for (const RuntimeFileExpectation& expectation : expectations) {
+        if (cancelled && cancelled->load()) {
+            filesValid = false;
+            errors.append(QStringLiteral("运行时文件校验已取消"));
+            evidence.insert(QStringLiteral("cancelled"), true);
+            break;
+        }
+        QString relativePath = QDir::fromNativeSeparators(
+            expectation.runtimeRelativePath.trimmed());
+        relativePath = QDir::cleanPath(relativePath);
+        const QStringList components = relativePath.split(
+            QLatin1Char('/'), QString::SkipEmptyParts);
+        const bool safePath = !relativePath.isEmpty()
+            && relativePath != QLatin1String(".")
+            && !QDir::isAbsolutePath(relativePath)
+            && !components.contains(QStringLiteral(".."));
+        if (safePath) {
+            if (expectedRuntimePaths.contains(relativePath)) {
+                filesValid = false;
+                exactFileSetValid = false;
+                if (errors.size() < 8) {
+                    errors.append(QStringLiteral("运行时校验条目路径重复：%1")
+                                      .arg(relativePath));
+                }
+            }
+            expectedRuntimePaths.insert(relativePath);
+        }
+        const QString expectedHash = expectation.expectedSha256.toLower();
+        const bool expectedHashValid =
+            hashPattern.match(expectedHash).hasMatch();
+        const QString runtimePath = safePath
+            ? QDir(runtimeRoot).absoluteFilePath(relativePath) : QString();
+        const QString actualHash = safePath
+            ? sha256File(runtimePath, cancelled) : QString();
+        const QFileInfo info(runtimePath);
+        const bool matched = safePath && expectedHashValid
+            && !actualHash.isEmpty() && actualHash == expectedHash;
+        if (info.isFile())
+            checkedBytes += info.size();
+        filesValid = filesValid && matched;
+
+        QJsonObject fileEvidence;
+        fileEvidence.insert(QStringLiteral("manifest_path"),
+                            expectation.manifestPath);
+        fileEvidence.insert(QStringLiteral("runtime_path"), runtimePath);
+        fileEvidence.insert(QStringLiteral("expected_sha256"), expectedHash);
+        fileEvidence.insert(QStringLiteral("actual_sha256"), actualHash);
+        fileEvidence.insert(QStringLiteral("bytes"),
+                            static_cast<double>(info.isFile() ? info.size() : 0));
+        fileEvidence.insert(QStringLiteral("matched"), matched);
+        files.append(fileEvidence);
+        if (!matched && errors.size() < 8) {
+            errors.append(QStringLiteral("运行时文件校验失败：%1")
+                              .arg(expectation.manifestPath));
+        }
+    }
+    QJsonArray unexpectedFiles;
+    bool enumerationCancelled = false;
+    QSet<QString> actualRuntimePaths;
+    QDirIterator iterator(
+        runtimeDirectory.absolutePath(),
+        QDir::Files | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot,
+        QDirIterator::Subdirectories);
+    while (iterator.hasNext()) {
+        if (cancelled && cancelled->load()) {
+            enumerationCancelled = true;
+            exactFileSetValid = false;
+            filesValid = false;
+            if (!evidence.value(QStringLiteral("cancelled")).toBool()) {
+                errors.append(QStringLiteral("运行时文件校验已取消"));
+                evidence.insert(QStringLiteral("cancelled"), true);
+            }
+            break;
+        }
+        const QString absolutePath = iterator.next();
+        const QString relativePath = QDir::cleanPath(
+            QDir::fromNativeSeparators(
+                runtimeDirectory.relativeFilePath(absolutePath)));
+        actualRuntimePaths.insert(relativePath);
+        if (!expectedRuntimePaths.contains(relativePath)) {
+            exactFileSetValid = false;
+            unexpectedFiles.append(relativePath);
+        }
+    }
+    if (!enumerationCancelled) {
+        for (const QString& expectedPath : expectedRuntimePaths) {
+            if (!actualRuntimePaths.contains(expectedPath)) {
+                exactFileSetValid = false;
+                break;
+            }
+        }
+    }
+    if (!unexpectedFiles.isEmpty()) {
+        filesValid = false;
+        errors.append(QStringLiteral("运行时目录包含 %1 个发布基线之外的文件")
+                          .arg(unexpectedFiles.size()));
+    }
+    evidence.insert(QStringLiteral("expected_file_count"),
+                    expectedRuntimePaths.size());
+    evidence.insert(QStringLiteral("actual_file_count"),
+                    actualRuntimePaths.size());
+    evidence.insert(QStringLiteral("unexpected_file_count"),
+                    unexpectedFiles.size());
+    evidence.insert(QStringLiteral("unexpected_files"), unexpectedFiles);
+    evidence.insert(QStringLiteral("exact_file_set_match"),
+                    exactFileSetValid);
+    verification.valid = manifestHashValid && filesValid
+        && exactFileSetValid;
+    verification.error = errors.join(QStringLiteral("；"));
+    evidence.insert(QStringLiteral("checked_file_count"), files.size());
+    evidence.insert(QStringLiteral("checked_bytes"),
+                    static_cast<double>(checkedBytes));
+    evidence.insert(QStringLiteral("files"), files);
+    evidence.insert(QStringLiteral("matched"), verification.valid);
+    if (!verification.error.isEmpty())
+        evidence.insert(QStringLiteral("error"), verification.error);
+    verification.evidence = evidence;
+    return verification;
 }
 
 bool writeJson(const QString& path, const QJsonObject& value, QString* error) {
@@ -368,7 +628,60 @@ bool writeJson(const QString& path, const QJsonObject& value, QString* error) {
     return true;
 }
 
-bool writeUtf8(const QString& path, const QString& value, QString* error) {
+bool writeChecksummedJson(const QString& jsonPath,
+                          const QString& checksumPath,
+                          const QJsonObject& value,
+                          QString* jsonSha256,
+                          QString* checksumSha256,
+                          QString* error) {
+    if (jsonSha256)
+        jsonSha256->clear();
+    if (checksumSha256)
+        checksumSha256->clear();
+    if (error)
+        error->clear();
+    QString localError;
+    if (!writeJson(jsonPath, value, &localError)) {
+        if (error)
+            *error = localError;
+        return false;
+    }
+    const QString reportHash = sha256File(jsonPath);
+    if (reportHash.isEmpty()) {
+        if (error)
+            *error = QStringLiteral("无法计算 JSON 文件 SHA-256");
+        return false;
+    }
+    const QByteArray checksumBytes =
+        reportHash.toLatin1() + QByteArrayLiteral("  ")
+        + QFileInfo(jsonPath).fileName().toUtf8()
+        + QByteArrayLiteral("\n");
+    if (!writeBytes(checksumPath, checksumBytes, &localError)) {
+        if (error)
+            *error = localError;
+        return false;
+    }
+    QFile checksumFile(checksumPath);
+    if (!checksumFile.open(QIODevice::ReadOnly)
+        || checksumFile.readAll() != checksumBytes) {
+        if (error)
+            *error = QStringLiteral("SHA256SUMS.txt 读回校验失败");
+        return false;
+    }
+    const QString checksumHash = sha256File(checksumPath);
+    if (checksumHash.isEmpty()) {
+        if (error)
+            *error = QStringLiteral("无法计算 SHA256SUMS.txt SHA-256");
+        return false;
+    }
+    if (jsonSha256)
+        *jsonSha256 = reportHash;
+    if (checksumSha256)
+        *checksumSha256 = checksumHash;
+    return true;
+}
+
+bool writeBytes(const QString& path, const QByteArray& value, QString* error) {
     QSaveFile file(path);
     file.setDirectWriteFallback(false);
     if (!file.open(QIODevice::WriteOnly)) {
@@ -376,13 +689,16 @@ bool writeUtf8(const QString& path, const QString& value, QString* error) {
             *error = file.errorString();
         return false;
     }
-    const QByteArray bytes = value.toUtf8();
-    if (file.write(bytes) != bytes.size() || !file.commit()) {
+    if (file.write(value) != value.size() || !file.commit()) {
         if (error)
             *error = file.errorString();
         return false;
     }
     return true;
+}
+
+bool writeUtf8(const QString& path, const QString& value, QString* error) {
+    return writeBytes(path, value.toUtf8(), error);
 }
 
 }  // namespace speechdoc::acceptance

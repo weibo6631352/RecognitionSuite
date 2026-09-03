@@ -1,8 +1,13 @@
 #pragma once
 
+#include <QByteArray>
+#include <QJsonArray>
 #include <QJsonObject>
+#include <QMap>
 #include <QString>
 #include <QVector>
+
+#include <atomic>
 
 namespace speechdoc::acceptance {
 
@@ -44,6 +49,18 @@ struct ConfidenceSummary {
     QString source;
 };
 
+struct RuntimeFileExpectation {
+    QString manifestPath;
+    QString runtimeRelativePath;
+    QString expectedSha256;
+};
+
+struct RuntimePayloadVerification {
+    bool valid = false;
+    QString error;
+    QJsonObject evidence;
+};
+
 bool loadDataset(const QString& manifestPath, Dataset* dataset, QString* error);
 QString normalizeText(const QString& text, const Dataset& dataset);
 Score compare(const QString& reference, const QString& hypothesis,
@@ -51,8 +68,26 @@ Score compare(const QString& reference, const QString& hypothesis,
 QString extractScanText(const QString& contentListPath, QString* error);
 ConfidenceSummary extractScanConfidence(const QString& contentListPath);
 ConfidenceSummary extractVoiceConfidence(const QByteArray& resultJson);
-QString sha256File(const QString& path);
+QString sha256File(const QString& path,
+                   const std::atomic_bool* cancelled = nullptr);
+QString sha256Bytes(const QByteArray& value);
+bool loadSha256Manifest(const QString& path,
+                        QMap<QString, QString>* entries,
+                        QString* error);
+RuntimePayloadVerification verifyRuntimePayload(
+    const QString& runtimeRoot,
+    const QString& checksumManifestPath,
+    const QString& expectedChecksumManifestSha256,
+    const QVector<RuntimeFileExpectation>& expectations,
+    const std::atomic_bool* cancelled = nullptr);
 bool writeJson(const QString& path, const QJsonObject& value, QString* error);
+bool writeChecksummedJson(const QString& jsonPath,
+                          const QString& checksumPath,
+                          const QJsonObject& value,
+                          QString* jsonSha256,
+                          QString* checksumSha256,
+                          QString* error);
+bool writeBytes(const QString& path, const QByteArray& value, QString* error);
 bool writeUtf8(const QString& path, const QString& value, QString* error);
 
 }  // namespace speechdoc::acceptance

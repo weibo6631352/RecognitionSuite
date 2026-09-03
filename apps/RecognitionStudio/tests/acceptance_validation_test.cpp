@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QTemporaryDir>
@@ -104,6 +105,136 @@ int main(int argc, char** argv) {
         || !require(confidence.mean > 0.899 && confidence.mean < 0.901,
                     "voice confidence mean failed"))
         return 1;
+
+    const QByteArray exactBytes =
+        QByteArray::fromHex("007b2261223a317d0d0aff");
+    const QString exactPath =
+        QDir(directory.path()).filePath(QStringLiteral("exact.bin"));
+    if (!require(writeBytes(exactPath, exactBytes, &error),
+                 "exact evidence write failed"))
+        return 1;
+    QFile exactFile(exactPath);
+    if (!require(exactFile.open(QIODevice::ReadOnly)
+                     && exactFile.readAll() == exactBytes,
+                 "exact evidence bytes changed"))
+        return 1;
+
+    QJsonObject report;
+    report.insert(QStringLiteral("verdict"), QStringLiteral("passed"));
+    const QString reportPath =
+        QDir(directory.path()).filePath(QStringLiteral("report.json"));
+    const QString checksumPath =
+        QDir(directory.path()).filePath(QStringLiteral("SHA256SUMS.txt"));
+    QString reportSha256;
+    QString checksumSha256;
+    if (!require(writeChecksummedJson(
+                     reportPath, checksumPath, report,
+                     &reportSha256, &checksumSha256, &error),
+                 "checksummed report write failed")
+        || !require(reportSha256 == sha256File(reportPath),
+                    "report checksum mismatch")
+        || !require(checksumSha256 == sha256File(checksumPath),
+                    "checksum file hash mismatch"))
+        return 1;
+    const QString missingReport =
+        QDir(directory.path()).filePath(
+            QStringLiteral("missing/report.json"));
+    if (!require(!writeChecksummedJson(
+                     missingReport, checksumPath, report,
+                     &reportSha256, &checksumSha256, &error),
+                 "invalid report destination was accepted"))
+        return 1;
+
+    const QString runtimeRoot =
+        QDir(directory.path()).filePath(QStringLiteral("runtime"));
+    const QString runtimeModel =
+        QDir(runtimeRoot).filePath(QStringLiteral("models/model.bin"));
+    if (!QDir().mkpath(QFileInfo(runtimeModel).absolutePath())
+        || !writeFile(runtimeModel, QByteArrayLiteral("published-model"))) {
+        return 1;
+    }
+    const QString sdkChecksums =
+        QDir(runtimeRoot).filePath(QStringLiteral("SDK_SHA256SUMS.txt"));
+    const QByteArray sdkChecksumBytes =
+        sha256File(runtimeModel).toLatin1()
+        + QByteArrayLiteral("  bin/models/model.bin\n");
+    if (!writeFile(sdkChecksums, sdkChecksumBytes))
+        return 1;
+    QMap<QString, QString> sdkEntries;
+    if (!require(loadSha256Manifest(sdkChecksums, &sdkEntries, &error),
+                 "SDK checksum manifest load failed"))
+        return 1;
+    RuntimeFileExpectation runtimeModelExpectation;
+    runtimeModelExpectation.manifestPath = QStringLiteral(
+        "bin/models/model.bin");
+    runtimeModelExpectation.runtimeRelativePath = QStringLiteral(
+        "models/model.bin");
+    runtimeModelExpectation.expectedSha256 = sdkEntries.value(
+        runtimeModelExpectation.manifestPath);
+    const QVector<RuntimeFileExpectation> runtimeExpectations = {
+        runtimeModelExpectation};
+    const RuntimePayloadVerification validPayload = verifyRuntimePayload(
+        runtimeRoot, sdkChecksums, sha256File(sdkChecksums),
+        runtimeExpectations);
+    if (!require(validPayload.valid, "published runtime payload was rejected")
+        || !require(validPayload.evidence
+                        .value(QStringLiteral("checked_file_count")).toInt() == 1,
+                    "runtime payload evidence count failed")
+        || !require(validPayload.evidence
+                        .value(QStringLiteral("exact_file_set_match")).toBool(),
+                    "runtime exact file-set evidence failed")) {
+        return 1;
+    }
+    const QString unexpectedRuntimeFile =
+        QDir(runtimeRoot).filePath(QStringLiteral("unexpected.bin"));
+    if (!writeFile(unexpectedRuntimeFile, QByteArrayLiteral("unexpected")))
+        return 1;
+    const RuntimePayloadVerification extraPayload = verifyRuntimePayload(
+        runtimeRoot, sdkChecksums, sha256File(sdkChecksums),
+        runtimeExpectations);
+    if (!require(!extraPayload.valid
+                     && extraPayload.evidence
+                            .value(QStringLiteral("unexpected_file_count"))
+                            .toInt() == 1,
+                 "unexpected runtime file was accepted")
+        || !QFile::remove(unexpectedRuntimeFile)) {
+        return 1;
+    }
+    std::atomic_bool cancelledVerification{true};
+    const RuntimePayloadVerification cancelledPayload = verifyRuntimePayload(
+        runtimeRoot, sdkChecksums, sha256File(sdkChecksums),
+        runtimeExpectations, &cancelledVerification);
+    if (!require(!cancelledPayload.valid
+                     && cancelledPayload.evidence
+                            .value(QStringLiteral("cancelled")).toBool(),
+                 "cancelled runtime verification did not stop")) {
+        return 1;
+    }
+    if (!writeFile(runtimeModel, QByteArrayLiteral("tampered-model")))
+        return 1;
+    const RuntimePayloadVerification tamperedPayload = verifyRuntimePayload(
+        runtimeRoot, sdkChecksums, sha256File(sdkChecksums),
+        runtimeExpectations);
+    if (!require(!tamperedPayload.valid,
+                 "tampered runtime payload was accepted"))
+        return 1;
+    if (!writeFile(runtimeModel, QByteArrayLiteral("published-model")))
+        return 1;
+    const RuntimePayloadVerification wrongAnchor = verifyRuntimePayload(
+        runtimeRoot, sdkChecksums, QString(64, QLatin1Char('0')),
+        runtimeExpectations);
+    if (!require(!wrongAnchor.valid,
+                 "wrong build checksum anchor was accepted"))
+        return 1;
+    const QString unsafeChecksums =
+        QDir(runtimeRoot).filePath(QStringLiteral("unsafe-SHA256SUMS.txt"));
+    if (!writeFile(unsafeChecksums,
+                   QByteArray(64, 'a') + QByteArrayLiteral("  ../escape.bin\n"))
+        || !require(!loadSha256Manifest(
+                         unsafeChecksums, &sdkEntries, &error),
+                    "unsafe checksum path was accepted")) {
+        return 1;
+    }
 
     const QDir repository(QStringLiteral(RECOGNITION_SUITE_SOURCE_DIR));
     const QString frozenRoot = repository.filePath(

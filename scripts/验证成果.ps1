@@ -288,10 +288,15 @@ if ($SdkOnly) {
 
 $studioPaths = @(
     'RecognitionStudio.exe',
+    'RecognitionStudioScanWorker.exe',
     'components/scanengine/ScanEngineCore.dll',
+    'components/scanengine/SDK_MANIFEST.json',
+    'components/scanengine/SDK_SHA256SUMS.txt',
     'components/scanengine/include/cccl',
     'components/scanengine/include/cuda',
     'components/voiceengine/VoiceEngineCore.dll',
+    'components/voiceengine/SDK_MANIFEST.json',
+    'components/voiceengine/SDK_SHA256SUMS.txt',
     'components/voiceengine/vcomp140.dll',
     'components/voiceengine/models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf',
     'licenses/scanengine', 'licenses/voiceengine', 'output'

@@ -4,10 +4,11 @@
 #include "mic_capture.h"
 
 #include <voiceengine/voiceengine.hpp>
-#include <scanengine/scanengine.hpp>
 
 #include <QMainWindow>
+#include <QByteArray>
 #include <QJsonArray>
+#include <QJsonObject>
 
 #include <atomic>
 #include <deque>
@@ -19,11 +20,14 @@ class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 class QProgressBar;
+class QProcess;
 class QPushButton;
 class QTableWidget;
 class QTimer;
 
 namespace speechdoc {
+
+class AcceptanceEvidencePanel;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -32,6 +36,7 @@ public:
     ~MainWindow() override;
 
     bool sdksReady() const noexcept { return speechReady_ && documentReady_; }
+    bool publishedRuntimeMatches(QString* error = nullptr) const;
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -58,22 +63,34 @@ private:
     void parseDocument();
     void cancelDocument();
     void openDocumentOutput();
+    void startDocumentWorker(const QString& input, const QString& output);
+    void readDocumentWorkerOutput();
+    void readDocumentWorkerErrors();
+    void processDocumentWorkerLine(const QByteArray& line);
+    void finishDocumentWorker(int exitCode, bool normalExit);
+    void failDocumentWorkerStart();
 
     void chooseAcceptanceManifest();
     void chooseAcceptanceOutput();
     void startAcceptance();
+    void verifyAcceptanceRuntimeStart();
+    void verifyAcceptanceRuntimeEnd(const QString& requestedState);
     void cancelAcceptance();
     void openAcceptanceOutput();
     void startNextAcceptanceSample();
     void completeAcceptanceVoice(const voiceengine::Result& result);
-    void completeAcceptanceDocument(const scanengine::Result& result);
-    void failAcceptanceSample(const QString& message);
+    void completeAcceptanceDocument(const QJsonObject& result);
+    void failAcceptanceSample(const QString& message,
+                              const QJsonObject& evidence = {},
+                              const QByteArray& rawResult = {});
     void recordAcceptanceSample(const QString& hypothesis,
                                 const acceptance::ConfidenceSummary& confidence,
                                 const QString& status,
-                                const QJsonObject& evidence = {});
+                                const QJsonObject& evidence = {},
+                                const QByteArray& rawResult = {});
     void finishAcceptance(const QString& state = QString());
     void updateAcceptanceSummary();
+    void showSelectedAcceptanceEvidence();
 
     void setRuntimeStatus(QLabel* label, bool ready, const QString& text);
     void appendLog(QPlainTextEdit* output, const QString& text);
@@ -85,12 +102,13 @@ private:
     bool speechReady_ = false;
     bool documentReady_ = false;
     bool speechModelLoading_ = false;
+    bool pendingSpeechRecognition_ = false;
+    bool pendingMicrophoneStart_ = false;
+    bool pendingVoiceAcceptance_ = false;
     std::atomic<bool> closing_{false};
 
     std::unique_ptr<voiceengine::Context> speechContext_;
-    std::unique_ptr<scanengine::Context> documentContext_;
     std::unique_ptr<voiceengine::Task> speechTask_;
-    std::unique_ptr<scanengine::Task> documentTask_;
     std::unique_ptr<voiceengine::Stream> speechStream_;
     std::deque<std::vector<float>> pendingMicAudio_;
     bool microphoneInputClosed_ = false;
@@ -119,6 +137,13 @@ private:
     QProgressBar* documentProgress_ = nullptr;
     QPlainTextEdit* documentResult_ = nullptr;
     QString lastDocumentOutput_;
+    QProcess* documentProcess_ = nullptr;
+    QByteArray documentWorkerStdout_;
+    QByteArray documentWorkerTranscript_;
+    QByteArray documentWorkerStderr_;
+    QJsonObject documentWorkerResult_;
+    QString documentWorkerError_;
+    bool documentWorkerCancelled_ = false;
 
     acceptance::Dataset acceptanceDataset_;
     bool acceptanceDatasetLoaded_ = false;
@@ -133,18 +158,33 @@ private:
     double acceptanceConfidenceTotal_ = 0.0;
     QString acceptanceRunDirectory_;
     QJsonArray acceptanceResults_;
+    QJsonObject acceptanceReport_;
+    QJsonObject acceptanceRuntimeStartEvidence_;
+    bool acceptanceRuntimeStartValid_ = false;
+    QString acceptanceRuntimeStartError_;
+    QJsonObject acceptanceRuntimeEndEvidence_;
+    bool acceptanceRuntimeEndValid_ = false;
+    bool acceptanceRuntimeEndVerified_ = false;
+    QString acceptanceRuntimeEndError_;
+    bool acceptanceRuntimeVerifying_ = false;
+    std::atomic_bool acceptanceRuntimeAbort_{false};
+    QString pendingAcceptanceFinishState_;
+    std::thread acceptanceRuntimeThread_;
+    QVector<QString> acceptanceHypotheses_;
 
     QLineEdit* acceptanceManifestPath_ = nullptr;
     QLineEdit* acceptanceOutputPath_ = nullptr;
     QPushButton* acceptanceStartButton_ = nullptr;
     QPushButton* acceptanceCancelButton_ = nullptr;
     QPushButton* acceptanceOpenButton_ = nullptr;
+    QPushButton* acceptanceEvidenceButton_ = nullptr;
     QProgressBar* acceptanceProgress_ = nullptr;
     QLabel* acceptanceDatasetStatus_ = nullptr;
     QLabel* acceptanceAccuracy_ = nullptr;
     QLabel* acceptanceConfidence_ = nullptr;
     QLabel* acceptanceVerdict_ = nullptr;
     QTableWidget* acceptanceTable_ = nullptr;
+    AcceptanceEvidencePanel* acceptanceEvidencePanel_ = nullptr;
 };
 
 }  // namespace speechdoc

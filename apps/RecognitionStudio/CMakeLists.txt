@@ -47,16 +47,49 @@ foreach(_sdk_root VOICEENGINE_SDK_ROOT SCANENGINE_SDK_ROOT)
     endif()
 endforeach()
 
+set(_voice_sdk_checksums "${VOICEENGINE_SDK_ROOT}/SHA256SUMS.txt")
+set(_scan_sdk_checksums "${SCANENGINE_SDK_ROOT}/SHA256SUMS.txt")
+set(_voice_sdk_manifest "${VOICEENGINE_SDK_ROOT}/SDK_MANIFEST.json")
+set(_scan_sdk_manifest "${SCANENGINE_SDK_ROOT}/SDK_MANIFEST.json")
+foreach(_checksums_file _voice_sdk_checksums _scan_sdk_checksums)
+    if(NOT EXISTS "${${_checksums_file}}")
+        message(FATAL_ERROR
+            "Published SDK checksum manifest is missing: ${${_checksums_file}}")
+    endif()
+endforeach()
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${_voice_sdk_checksums}"
+    "${_scan_sdk_checksums}"
+    "${_voice_sdk_manifest}"
+    "${_scan_sdk_manifest}")
+file(SHA256 "${_voice_sdk_checksums}" _voice_sdk_checksums_sha256)
+file(SHA256 "${_scan_sdk_checksums}" _scan_sdk_checksums_sha256)
+file(SHA256 "${_voice_sdk_manifest}" _voice_sdk_manifest_sha256)
+file(SHA256 "${_scan_sdk_manifest}" _scan_sdk_manifest_sha256)
+set(_runtime_baseline_definitions
+    VOICEENGINE_SDK_CHECKSUMS_SHA256="${_voice_sdk_checksums_sha256}"
+    SCANENGINE_SDK_CHECKSUMS_SHA256="${_scan_sdk_checksums_sha256}"
+    VOICEENGINE_SDK_MANIFEST_SHA256="${_voice_sdk_manifest_sha256}"
+    SCANENGINE_SDK_MANIFEST_SHA256="${_scan_sdk_manifest_sha256}")
+
 find_package(Qt5 5.12.9 EXACT REQUIRED COMPONENTS Widgets)
 find_package(VoiceEngine CONFIG REQUIRED
     PATHS "${VOICEENGINE_SDK_ROOT}/cmake" NO_DEFAULT_PATH)
 find_package(ScanEngine CONFIG REQUIRED
     PATHS "${SCANENGINE_SDK_ROOT}/cmake" NO_DEFAULT_PATH)
 
+add_executable(RecognitionStudioScanWorker
+    src/scan_worker_main.cpp)
+target_link_libraries(RecognitionStudioScanWorker PRIVATE
+    Qt5::Core
+    ScanEngine::CXX)
+
 add_executable(RecognitionStudio WIN32
     src/main.cpp
     src/main_window.cpp
     src/main_window.h
+    src/acceptance_evidence_panel.cpp
+    src/acceptance_evidence_panel.h
     src/acceptance_validation.cpp
     src/acceptance_validation.h
     src/mic_capture.cpp
@@ -66,8 +99,10 @@ add_executable(RecognitionStudio WIN32
 target_link_libraries(RecognitionStudio PRIVATE
     Qt5::Widgets
     VoiceEngine::CXX
-    ScanEngine::CXX
     ole32)
+target_compile_definitions(RecognitionStudio PRIVATE
+    ${_runtime_baseline_definitions})
+add_dependencies(RecognitionStudio RecognitionStudioScanWorker)
 
 include(CTest)
 if(BUILD_TESTING)
@@ -90,21 +125,34 @@ if(BUILD_TESTING)
         tests/main_window_test.cpp
         src/main_window.cpp
         src/main_window.h
+        src/acceptance_evidence_panel.cpp
+        src/acceptance_evidence_panel.h
         src/acceptance_validation.cpp
         src/acceptance_validation.h
         src/mic_capture.cpp
         src/mic_capture.h)
     target_include_directories(RecognitionStudioUiTests PRIVATE src)
     target_link_libraries(RecognitionStudioUiTests PRIVATE
-        Qt5::Widgets VoiceEngine::CXX ScanEngine::CXX ole32)
+        Qt5::Widgets VoiceEngine::CXX ole32)
+    target_compile_definitions(RecognitionStudioUiTests PRIVATE
+        ${_runtime_baseline_definitions})
     set_target_properties(RecognitionStudioUiTests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
     add_test(NAME RecognitionStudioUiTests
         COMMAND $<TARGET_FILE:RecognitionStudioUiTests>)
+    add_dependencies(RecognitionStudioUiTests RecognitionStudioScanWorker)
+
+    add_test(NAME RecognitionStudioScanWorkerCliTest
+        COMMAND $<TARGET_FILE:RecognitionStudioScanWorker> --help)
+    set_tests_properties(RecognitionStudioScanWorkerCliTest PROPERTIES
+        PASS_REGULAR_EXPRESSION "RecognitionStudio isolated ScanEngine worker")
 endif()
 
-set_target_properties(RecognitionStudio PROPERTIES
+set_target_properties(
+    RecognitionStudio
+    RecognitionStudioScanWorker
+    PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
 
@@ -126,6 +174,14 @@ set(_voice_runtime_core
     "${_studio_bin_dir}/components/voiceengine/VoiceEngineCore.dll")
 set(_scan_runtime_core
     "${_studio_bin_dir}/components/scanengine/ScanEngineCore.dll")
+set(_voice_runtime_sdk_manifest
+    "${_studio_bin_dir}/components/voiceengine/SDK_MANIFEST.json")
+set(_voice_runtime_sdk_checksums
+    "${_studio_bin_dir}/components/voiceengine/SDK_SHA256SUMS.txt")
+set(_scan_runtime_sdk_manifest
+    "${_studio_bin_dir}/components/scanengine/SDK_MANIFEST.json")
+set(_scan_runtime_sdk_checksums
+    "${_studio_bin_dir}/components/scanengine/SDK_SHA256SUMS.txt")
 set(_voice_runtime_model
     "${_voice_runtime_model_dir}/Qwen3-ASR-1.7B-bf16.gguf")
 add_custom_command(
@@ -133,6 +189,10 @@ add_custom_command(
         "${_sdk_runtime_stamp}"
         "${_voice_runtime_core}"
         "${_scan_runtime_core}"
+        "${_voice_runtime_sdk_manifest}"
+        "${_voice_runtime_sdk_checksums}"
+        "${_scan_runtime_sdk_manifest}"
+        "${_scan_runtime_sdk_checksums}"
         "${_voice_runtime_model}"
     COMMAND "${CMAKE_COMMAND}" -E rm -rf
         "${_studio_bin_dir}/components/voiceengine"
@@ -148,6 +208,12 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
         "${VOICEENGINE_SDK_ROOT}/bin"
         "${_studio_bin_dir}/components/voiceengine"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${VOICEENGINE_SDK_ROOT}/SDK_MANIFEST.json"
+        "${_voice_runtime_sdk_manifest}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${VOICEENGINE_SDK_ROOT}/SHA256SUMS.txt"
+        "${_voice_runtime_sdk_checksums}"
     COMMAND "${_powershell_executable}"
         -NoProfile -NonInteractive -ExecutionPolicy Bypass
         -File "${_voice_model_materializer}"
@@ -156,6 +222,12 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
         "${SCANENGINE_SDK_ROOT}/bin"
         "${_studio_bin_dir}/components/scanengine"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${SCANENGINE_SDK_ROOT}/SDK_MANIFEST.json"
+        "${_scan_runtime_sdk_manifest}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${SCANENGINE_SDK_ROOT}/SHA256SUMS.txt"
+        "${_scan_runtime_sdk_checksums}"
     COMMAND "${CMAKE_COMMAND}" -E copy_directory
         "${VOICEENGINE_SDK_ROOT}/licenses"
         "${_studio_bin_dir}/licenses/voiceengine"
@@ -180,8 +252,16 @@ add_custom_target(RecognitionStudioSdkRuntime ALL
         "${_sdk_runtime_stamp}"
         "${_voice_runtime_core}"
         "${_scan_runtime_core}"
+        "${_voice_runtime_sdk_manifest}"
+        "${_voice_runtime_sdk_checksums}"
+        "${_scan_runtime_sdk_manifest}"
+        "${_scan_runtime_sdk_checksums}"
         "${_voice_runtime_model}")
 add_dependencies(RecognitionStudio RecognitionStudioSdkRuntime)
+add_dependencies(RecognitionStudioScanWorker RecognitionStudioSdkRuntime)
+if(BUILD_TESTING)
+    add_dependencies(RecognitionStudioUiTests RecognitionStudioSdkRuntime)
+endif()
 
 get_target_property(_qt_qmake Qt5::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qt_qmake}" DIRECTORY)

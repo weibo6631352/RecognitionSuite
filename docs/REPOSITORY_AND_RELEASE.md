@@ -41,8 +41,11 @@ VoiceEngine 的完整主 GGUF 超过远端单文件限制，因此 SDK 基线保
 
 `apps/RecognitionStudio/build/windows-msvc-qt5/bin/` 是最终运行包的 staging。发布时应复制或压缩到 `artifacts/<version>/RecognitionStudio-windows-x64/`，生成校验和后上传发布制品库。运行包应包含：
 
-- `RecognitionStudio.exe` 和根目录 Qt/MSVC 运行库；
+- `RecognitionStudio.exe`、`RecognitionStudioScanWorker.exe` 和根目录
+  Qt/MSVC 运行库；扫描工作进程退出时会完整回收 ScanEngine 的 GPU 资源；
 - `components/voiceengine/` 与 `components/scanengine/` 两个相互隔离的 SDK 运行时；
+- 两个组件根目录下的 `SDK_MANIFEST.json` 与
+  `SDK_SHA256SUMS.txt` 发布身份文件；
 - `licenses/voiceengine/` 与 `licenses/scanengine/`；
 - 可写的 `output/`。
 
