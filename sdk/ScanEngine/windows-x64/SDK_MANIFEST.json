@@ -27,5 +27,5 @@
     "payload_bytes":  4629508532,
     "checksums_file":  "SHA256SUMS.txt",
     "checksums_sha256":  "7831833c7b72850eba959a84320d1c15a129283f14c3aba74f8a2f73e480cbf6",
-    "generated_by":  "scripts/发布SDK.ps1"
+    "generated_by":  "scripts/构建.ps1 -Target SDKs"
 }

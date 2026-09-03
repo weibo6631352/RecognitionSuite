@@ -2,7 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
-$suiteRoot = Split-Path -Parent $PSScriptRoot
+$suiteRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $artifactsRoot = Join-Path $suiteRoot 'artifacts'
 $stagingRoot = Join-Path $artifactsRoot 'sdk-publish-staging'
 $backupRoot = Join-Path $artifactsRoot 'sdk-publish-backup'
@@ -107,7 +107,7 @@ function Write-SdkManifest {
         payload_bytes = $payloadBytes
         checksums_file = 'SHA256SUMS.txt'
         checksums_sha256 = $checksumsHash
-        generated_by = 'scripts/发布SDK.ps1'
+        generated_by = 'scripts/构建.ps1 -Target SDKs'
     }
     $json = $manifest | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($manifestPath, $json + "`n", $utf8NoBom)

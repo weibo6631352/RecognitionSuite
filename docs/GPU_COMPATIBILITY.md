@@ -12,8 +12,8 @@ RecognitionStudio 的正式目标是 NVIDIA GeForce RTX 40 与 RTX 50 系列 GPU
 - CUDA Toolkit 构建版本为 12.9.41；Windows 驱动基线为 576.02；
 - 不提供 CPU 识别降级路径。
 
-`scripts/验证CUDA架构.ps1` 直接读取两颗已发布 Core DLL 的
-fatbin。SDK 发布会自动执行该检查；正式发布还应执行：
+`scripts/验证成果.ps1` 的 `-VerifyCudaArchitectures` 模式会读取两颗已发布
+Core DLL 的 fatbin。SDK 发布会自动执行同一检查；正式发布还应执行：
 
 ```powershell
 .\scripts\验证成果.ps1 -VerifySdkHashes -VerifyCudaArchitectures

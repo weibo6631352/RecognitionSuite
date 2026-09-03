@@ -6,7 +6,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$suiteRoot = Split-Path -Parent $PSScriptRoot
+$suiteRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 if (-not $ScanCorePath) {
     $ScanCorePath = Join-Path $suiteRoot 'sdk/ScanEngine/windows-x64/bin/ScanEngineCore.dll'

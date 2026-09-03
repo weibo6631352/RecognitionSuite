@@ -18,5 +18,8 @@
   the root `sdk/` directory.
 - Keep component-specific code in its owning app or engine directory. Shared
   requirements, validation data, and release automation belong at the root.
+- Keep `scripts/` top-level files limited to human-facing one-click actions.
+  Put implementation helpers under `scripts/internal/` and do not document
+  them as direct entry points.
 - Local commits use concise English imperative messages. Push only when the
   user explicitly requests it.

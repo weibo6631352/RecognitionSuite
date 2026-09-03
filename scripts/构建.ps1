@@ -104,7 +104,7 @@ if ($Target -in @('All', 'SDKs', 'Engines', 'VoiceEngine')) {
 }
 
 if (-not $ConfigureOnly -and $Target -in @('All', 'SDKs')) {
-    & (Join-Path $PSScriptRoot '发布SDK.ps1')
+    & (Join-Path (Join-Path $PSScriptRoot 'internal') '发布SDK.ps1')
 }
 elseif (-not $ConfigureOnly -and $Target -in @('Engines', 'ScanEngine', 'VoiceEngine')) {
     Write-Output 'Engine staging build complete; the committed root SDK baseline was not changed. Use -Target SDKs to refresh it.'

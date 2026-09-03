@@ -5,3 +5,8 @@ root = true
 charset = utf-8-bom
 end_of_line = crlf
 insert_final_newline = true
+
+[scripts/internal/*.ps1]
+charset = utf-8-bom
+end_of_line = crlf
+insert_final_newline = true

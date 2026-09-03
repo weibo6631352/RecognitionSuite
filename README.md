@@ -14,7 +14,7 @@ RecognitionSuite
 ├─ sdk/                                 已验证、已提交的 Windows x64 SDK 基线
 ├─ docs/                                需求、技术总结、发布约定
 ├─ testdata/                            冻结验收输入与人工参考
-└─ scripts/                             联合构建和产物检查
+└─ scripts/                             一键构建和成果验证入口
 ```
 
 两套引擎仍是独立构建和发布边界，`RecognitionStudio` 仍只消费公开 SDK；但 Git 只保留一个根仓库，从而让跨组件 ABI 调整、验收数据和最终发布始终落在同一个可复现提交中。
@@ -57,7 +57,7 @@ git status --short --branch
 .\scripts\验证成果.ps1 -VerifySdkHashes -VerifyCudaArchitectures
 ```
 
-根 `scripts/` 下的自有 PowerShell 脚本统一使用中文名称。`sdk/` 内已发布工具的英文路径属于 SDK 稳定接口，`third_party/` 内脚本属于上游源码，两者不随仓库辅助脚本改名。
+`scripts/` 顶层只保留 `构建.ps1` 和 `验证成果.ps1` 两个直接入口；发布、模型拼接和 CUDA 二进制检查位于 `scripts/internal/`，不应单独运行。`sdk/` 内已发布工具的英文路径属于 SDK 稳定接口，`third_party/` 内脚本属于上游源码，两者不随仓库辅助脚本改名。
 
 两套 SDK 的 Core DLL 必须同时携带 RTX 40 (`sm_89`) 与 RTX 50
 (`sm_120a`) 原生 CUDA 代码；最终程序启动时也会拒绝其他计算能力。
