@@ -7,6 +7,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QTabWidget>
+#include <QTableWidget>
 
 #include <iostream>
 
@@ -42,6 +43,15 @@ int main(int argc, char** argv) {
         std::cerr << "acceptance metric labels are incomplete\n";
         return 1;
     }
+    const auto* acceptanceTable = tabs->widget(acceptanceTab)
+        ->findChild<QTableWidget*>(QStringLiteral("acceptanceTable"));
+    if (!acceptanceTable
+        || !acceptanceTable->horizontalHeaderItem(5)
+        || acceptanceTable->horizontalHeaderItem(5)->text()
+            != QStringLiteral("模型置信度")) {
+        std::cerr << "model confidence table header is missing\n";
+        return 1;
+    }
     auto* evidencePanel =
         tabs->widget(acceptanceTab)
             ->findChild<speechdoc::AcceptanceEvidencePanel*>(
@@ -72,6 +82,17 @@ int main(int argc, char** argv) {
     sample.insert(QStringLiteral("edit_distance"), 1);
     sample.insert(QStringLiteral("reference_characters"), 50);
     sample.insert(QStringLiteral("confidence"), confidence);
+    QJsonObject difference;
+    difference.insert(QStringLiteral("position"), 11);
+    difference.insert(QStringLiteral("reference_character"),
+                      QStringLiteral("："));
+    difference.insert(QStringLiteral("reference_code_point"),
+                      QStringLiteral("U+FF1A"));
+    difference.insert(QStringLiteral("hypothesis_character"),
+                      QStringLiteral(":"));
+    difference.insert(QStringLiteral("hypothesis_code_point"),
+                      QStringLiteral("U+003A"));
+    sample.insert(QStringLiteral("first_normalized_difference"), difference);
     evidencePanel->showSample(
         QStringLiteral("sample-1"), QStringLiteral("冻结真值"),
         QStringLiteral("识别文本"), sample);
@@ -81,11 +102,18 @@ int main(int argc, char** argv) {
         QStringLiteral("evidenceHypothesis"));
     const auto* rawJson = evidencePanel->findChild<QPlainTextEdit*>(
         QStringLiteral("evidenceRawJson"));
+    const auto* summary = evidencePanel->findChild<QLabel*>(
+        QStringLiteral("evidenceSummary"));
     if (!reference || reference->toPlainText() != QStringLiteral("冻结真值")
         || !hypothesis
         || hypothesis->toPlainText() != QStringLiteral("识别文本")
         || !rawJson
-        || !rawJson->toPlainText().contains(QStringLiteral("\"calibrated\": false"))) {
+        || !rawJson->toPlainText().contains(QStringLiteral("\"calibrated\": false"))
+        || !summary
+        || !summary->text().contains(QStringLiteral("模型置信度 91.00%"))
+        || !summary->text().contains(QStringLiteral("U+FF1A"))
+        || !summary->text().contains(QStringLiteral("U+003A"))
+        || summary->text().contains(QStringLiteral("未校准"))) {
         std::cerr << "acceptance sample evidence is not rendered\n";
         return 1;
     }

@@ -284,6 +284,63 @@ Score compare(const QString& reference, const QString& hypothesis,
     return {expected.size(), actual.size(), previous.last()};
 }
 
+QJsonObject describeFirstDifference(const QString& reference,
+                                    const QString& hypothesis,
+                                    const Dataset& dataset) {
+    const QVector<uint> expected = normalizeText(reference, dataset).toUcs4();
+    const QVector<uint> actual = normalizeText(hypothesis, dataset).toUcs4();
+    int index = 0;
+    while (index < expected.size() && index < actual.size()
+           && expected.at(index) == actual.at(index)) {
+        ++index;
+    }
+    if (index == expected.size() && index == actual.size())
+        return {};
+
+    const auto character = [](const QVector<uint>& text, int position) {
+        if (position >= text.size())
+            return QStringLiteral("<文本结束>");
+        const uint codePoint = text.at(position);
+        if (codePoint == static_cast<uint>(' '))
+            return QStringLiteral("␠");
+        if (codePoint == static_cast<uint>('\n'))
+            return QStringLiteral("↵");
+        if (codePoint == static_cast<uint>('\t'))
+            return QStringLiteral("⇥");
+        return QString::fromUcs4(&codePoint, 1);
+    };
+    const auto codePoint = [](const QVector<uint>& text, int position) {
+        return position < text.size()
+            ? QStringLiteral("U+%1").arg(
+                  text.at(position), 4, 16, QLatin1Char('0')).toUpper()
+            : QString();
+    };
+    const auto context = [index](const QVector<uint>& text) {
+        if (text.isEmpty())
+            return QString();
+        const int begin = qMax(0, index - 8);
+        const int count = qMin(text.size() - begin, 17);
+        return QString::fromUcs4(text.constData() + begin, count);
+    };
+
+    QJsonObject difference;
+    difference.insert(QStringLiteral("position"), index + 1);
+    difference.insert(QStringLiteral("reference_character"),
+                      character(expected, index));
+    difference.insert(QStringLiteral("reference_code_point"),
+                      codePoint(expected, index));
+    difference.insert(QStringLiteral("hypothesis_character"),
+                      character(actual, index));
+    difference.insert(QStringLiteral("hypothesis_code_point"),
+                      codePoint(actual, index));
+    difference.insert(QStringLiteral("reference_context"), context(expected));
+    difference.insert(QStringLiteral("hypothesis_context"), context(actual));
+    difference.insert(
+        QStringLiteral("comparison_basis"),
+        QStringLiteral("normalized text used by the accuracy metric"));
+    return difference;
+}
+
 QString extractScanText(const QString& contentListPath, QString* error) {
     QFile file(contentListPath);
     if (!file.open(QIODevice::ReadOnly)) {

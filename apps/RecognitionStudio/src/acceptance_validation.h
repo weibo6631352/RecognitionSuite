@@ -65,6 +65,9 @@ bool loadDataset(const QString& manifestPath, Dataset* dataset, QString* error);
 QString normalizeText(const QString& text, const Dataset& dataset);
 Score compare(const QString& reference, const QString& hypothesis,
               const Dataset& dataset);
+QJsonObject describeFirstDifference(const QString& reference,
+                                    const QString& hypothesis,
+                                    const Dataset& dataset);
 QString extractScanText(const QString& contentListPath, QString* error);
 ConfidenceSummary extractScanConfidence(const QString& contentListPath);
 ConfidenceSummary extractVoiceConfidence(const QByteArray& resultJson);

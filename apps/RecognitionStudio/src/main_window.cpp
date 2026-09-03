@@ -768,8 +768,8 @@ void MainWindow::buildUi() {
     acceptanceConfidence_->setObjectName(QStringLiteral("metricValue"));
     acceptanceVerdict_->setObjectName(QStringLiteral("verdictValue"));
     acceptanceConfidence_->setToolTip(QStringLiteral(
-        "未校准：模型内部评分尚未用独立校准集映射为真实正确概率；"
-        "98% 验收结论只由冻结真值与识别文本的编辑距离决定。"));
+        "模型输出的置信度，仅作辅助参考；98% 验收结论只由冻结真值与"
+        "识别文本的编辑距离决定。"));
     acceptanceMetrics->addWidget(acceptanceAccuracy_, 1, 0);
     acceptanceMetrics->addWidget(acceptanceConfidence_, 1, 1);
     acceptanceMetrics->addWidget(acceptanceVerdict_, 1, 2);
@@ -803,7 +803,7 @@ void MainWindow::buildUi() {
     acceptanceTable_->setHorizontalHeaderLabels({
         QStringLiteral("样本"), QStringLiteral("状态"),
         QStringLiteral("真值字符"), QStringLiteral("编辑距离"),
-        QStringLiteral("实际准确率"), QStringLiteral("置信度")});
+        QStringLiteral("实际准确率"), QStringLiteral("模型置信度")});
     acceptanceTable_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     for (int column = 1; column < acceptanceTable_->columnCount(); ++column)
         acceptanceTable_->horizontalHeader()->setSectionResizeMode(column, QHeaderView::ResizeToContents);
@@ -1572,7 +1572,7 @@ void MainWindow::finishDocumentWorker(int exitCode, bool normalExit) {
                 acceptance::extractScanConfidence(jsonPath);
             if (confidence.count > 0) {
                 appendLog(documentResult_,
-                          QStringLiteral("中间分数均值：%1（%2 项，未校准）")
+                          QStringLiteral("模型中间置信分数均值：%1（%2 项）")
                               .arg(percent(confidence.mean))
                               .arg(confidence.count));
             }
@@ -2206,6 +2206,12 @@ void MainWindow::recordAcceptanceSample(
     result.insert(QStringLiteral("edit_distance"),
                   static_cast<double>(score.editDistance));
     result.insert(QStringLiteral("accuracy"), score.accuracy());
+    const QJsonObject firstDifference = acceptance::describeFirstDifference(
+        sample.reference, hypothesis, acceptanceDataset_);
+    if (!firstDifference.isEmpty()) {
+        result.insert(QStringLiteral("first_normalized_difference"),
+                      firstDifference);
+    }
     if (confidence.count > 0) {
         QJsonObject confidenceObject;
         confidenceObject.insert(QStringLiteral("mean"), confidence.mean);
@@ -2291,7 +2297,7 @@ void MainWindow::recordAcceptanceSample(
         QString::number(score.referenceCharacters),
         QString::number(score.editDistance),
         percent(score.accuracy()),
-        confidence.count > 0 ? percent(confidence.mean) + QStringLiteral("（未校准）")
+        confidence.count > 0 ? percent(confidence.mean)
                              : QStringLiteral("不可用")};
     for (int column = 0; column < values.size(); ++column) {
         auto* item = new QTableWidgetItem(values[column]);
@@ -2323,7 +2329,6 @@ void MainWindow::updateAcceptanceSummary() {
     acceptanceConfidence_->setText(
         acceptanceConfidenceCount_ > 0
             ? percent(acceptanceConfidenceTotal_ / acceptanceConfidenceCount_)
-                  + QStringLiteral(" · 未校准")
             : QStringLiteral("不可用"));
 }
 
@@ -2616,7 +2621,7 @@ void MainWindow::pollSdkTasks() {
                             QByteArray::fromStdString(result.json));
                         if (confidence.count > 0) {
                             appendLog(speechResult_,
-                                      QStringLiteral("模型置信度：%1（未校准）")
+                                      QStringLiteral("模型置信度：%1")
                                           .arg(percent(confidence.mean)));
                         }
                         statusBar()->showMessage(QStringLiteral("音频识别完成"));

@@ -36,6 +36,23 @@ int main(int argc, char** argv) {
     if (!require(score.referenceCharacters == 3, "reference normalization failed")
         || !require(score.editDistance == 1, "edit distance failed"))
         return 1;
+    const QJsonObject difference = describeFirstDifference(
+        QStringLiteral("Action Item：完成\n"),
+        QStringLiteral("Action Item: 完成"), dataset);
+    if (!require(
+            difference.value(QStringLiteral("reference_code_point")).toString()
+                == QStringLiteral("U+FF1A"),
+            "full-width reference difference was not described")
+        || !require(
+            difference.value(QStringLiteral("hypothesis_code_point")).toString()
+                == QStringLiteral("U+003A"),
+            "half-width hypothesis difference was not described")
+        || !require(describeFirstDifference(
+                        QStringLiteral("甲 乙"), QStringLiteral("甲乙"), dataset)
+                        .isEmpty(),
+                    "normalization-equivalent text reported a difference")) {
+        return 1;
+    }
 
     QTemporaryDir directory;
     if (!require(directory.isValid(), "temporary directory failed"))
