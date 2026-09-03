@@ -13,9 +13,9 @@ Git 合并不等于源码耦合。两个引擎继续生成独立 SDK，宿主继
 - `sdk/ScanEngine/windows-x64/`
 - `sdk/VoiceEngine/windows-x64/`
 
-执行 `scripts/build.ps1` 默认只构建 Studio。
+执行 `scripts/构建.ps1` 默认只构建 Studio。
 
-只有 SDK 需要升级时才执行 `scripts/build.ps1 -Target SDKs`：如果引擎源码有变化，先把它暂存；脚本会拒绝未暂存或未跟踪的引擎源码，避免 SDK 与构建输入不一致。随后脚本在两个引擎的 `build/<preset>/sdk/` 生成 staging，由 `scripts/publish-sdks.ps1` 规范化模型、完成全量 SHA-256 校验并以可回滚方式更新根 SDK 基线。每份清单同时记录基准 `source_commit` 和实际暂存引擎子树的 `source_tree`；SDK 与对应源码必须在同一提交中审查。
+只有 SDK 需要升级时才执行 `scripts/构建.ps1 -Target SDKs`：如果引擎源码有变化，先把它暂存；脚本会拒绝未暂存或未跟踪的引擎源码，避免 SDK 与构建输入不一致。该模式只请求两个引擎各自的 SDK 目标，不重复组装独立 GUI/CLI 运行包。随后脚本在两个引擎的 `build/<preset>/sdk/` 生成 staging，由 `scripts/发布SDK.ps1` 规范化模型、完成全量 SHA-256 校验并以可回滚方式更新根 SDK 基线。每份清单同时记录基准 `source_commit` 和实际暂存引擎子树的 `source_tree`；SDK 与对应源码必须在同一提交中审查。
 
 `-Target Engines`、`ScanEngine` 和 `VoiceEngine` 只构建引擎本地 staging，不会发布根 SDK；只有 `SDKs` 和 `All` 会更新基线。
 
@@ -53,13 +53,13 @@ VoiceEngine 的完整主 GGUF 超过远端单文件限制，因此 SDK 基线保
 在构建完成后运行：
 
 ```powershell
-.\scripts\verify-artifacts.ps1
+.\scripts\验证成果.ps1
 ```
 
 该检查验证已提交 SDK 基线和最终运行包的必要文件、清单、私有 CUDA/FFmpeg 目录、模型、许可证及旧产品名残留。发布前执行：
 
 ```powershell
-.\scripts\verify-artifacts.ps1 -VerifySdkHashes -VerifyCudaArchitectures
+.\scripts\验证成果.ps1 -VerifySdkHashes -VerifyCudaArchitectures
 ```
 
 其中架构检查使用 CUDA 12.9 的 `cuobjdump`，强制两颗 Core DLL 同时包含

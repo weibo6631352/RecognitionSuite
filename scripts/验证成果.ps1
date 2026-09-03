@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$VerifySdkHashes,
     [switch]$VerifyCudaArchitectures,
@@ -268,7 +268,7 @@ Verify-SdkManifest -Root $voiceSdk
 
 if ($VerifyCudaArchitectures) {
     try {
-        & (Join-Path $PSScriptRoot 'verify-cuda-architectures.ps1') `
+        & (Join-Path $PSScriptRoot '验证CUDA架构.ps1') `
             -ScanCorePath (Join-Path $scanSdk 'bin/ScanEngineCore.dll') `
             -VoiceCorePath (Join-Path $voiceSdk 'bin/VoiceEngineCore.dll')
     }

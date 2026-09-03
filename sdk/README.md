@@ -14,7 +14,7 @@ Refresh both baselines with:
 
 ```powershell
 git add engines/ScanEngine engines/VoiceEngine  # when engine sources changed
-.\scripts\build.ps1 -Target SDKs
+.\scripts\构建.ps1 -Target SDKs
 ```
 
 The publisher refuses unstaged or untracked engine sources. Each manifest

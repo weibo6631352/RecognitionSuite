@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet('Studio', 'All', 'SDKs', 'Engines', 'ScanEngine', 'VoiceEngine')]
     [string]$Target = 'Studio',
@@ -11,7 +11,8 @@ $suiteRoot = Split-Path -Parent $PSScriptRoot
 function Invoke-CMakePreset {
     param(
         [Parameter(Mandatory)] [string]$Repository,
-        [Parameter(Mandatory)] [string]$Preset
+        [Parameter(Mandatory)] [string]$Preset,
+        [string]$BuildTarget
     )
 
     $repositoryRoot = Join-Path $suiteRoot $Repository
@@ -26,7 +27,11 @@ function Invoke-CMakePreset {
             throw "CMake configure failed for $Repository"
         }
         if (-not $ConfigureOnly) {
-            & cmake --build --preset $Preset
+            $buildArguments = @('--build', '--preset', $Preset)
+            if ($BuildTarget) {
+                $buildArguments += @('--target', $BuildTarget)
+            }
+            & cmake @buildArguments
             if ($LASTEXITCODE -ne 0) {
                 throw "CMake build failed for $Repository"
             }
@@ -87,15 +92,19 @@ if ($Target -in @('All', 'SDKs')) {
 }
 
 if ($Target -in @('All', 'SDKs', 'Engines', 'ScanEngine')) {
-    Invoke-CMakePreset -Repository 'engines/ScanEngine' -Preset 'win-qt5.12.9-msvc-mlx-cuda'
+    $buildTarget = if ($Target -in @('All', 'SDKs')) { 'ScanEngineSDK' } else { $null }
+    Invoke-CMakePreset -Repository 'engines/ScanEngine' `
+        -Preset 'win-qt5.12.9-msvc-mlx-cuda' -BuildTarget $buildTarget
 }
 
 if ($Target -in @('All', 'SDKs', 'Engines', 'VoiceEngine')) {
-    Invoke-CMakePreset -Repository 'engines/VoiceEngine' -Preset 'win-qt5.12.9-msvc-cuda'
+    $buildTarget = if ($Target -in @('All', 'SDKs')) { 'sdk-bin' } else { $null }
+    Invoke-CMakePreset -Repository 'engines/VoiceEngine' `
+        -Preset 'win-qt5.12.9-msvc-cuda' -BuildTarget $buildTarget
 }
 
 if (-not $ConfigureOnly -and $Target -in @('All', 'SDKs')) {
-    & (Join-Path $PSScriptRoot 'publish-sdks.ps1')
+    & (Join-Path $PSScriptRoot '发布SDK.ps1')
 }
 elseif (-not $ConfigureOnly -and $Target -in @('Engines', 'ScanEngine', 'VoiceEngine')) {
     Write-Output 'Engine staging build complete; the committed root SDK baseline was not changed. Use -Target SDKs to refresh it.'
@@ -103,7 +112,7 @@ elseif (-not $ConfigureOnly -and $Target -in @('Engines', 'ScanEngine', 'VoiceEn
 
 if ($Target -in @('All', 'Studio')) {
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
-        -File (Join-Path $PSScriptRoot 'verify-artifacts.ps1') `
+        -File (Join-Path $PSScriptRoot '验证成果.ps1') `
         -SdkOnly -SkipSdkGitTracking
     if ($LASTEXITCODE -ne 0) {
         throw 'Published SDK baseline verification failed.'

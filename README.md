@@ -33,7 +33,7 @@ git lfs pull
 Windows 构建机需要 VS 2022/v143 和 Qt 5.12.9 MSVC x64。日常开发直接使用仓库中已验证的两套 SDK，只构建 `RecognitionStudio`：
 
 ```powershell
-.\scripts\build.ps1
+.\scripts\构建.ps1
 ```
 
 只有在明确更新引擎基线时才重建两套引擎，并把验证后的 staging SDK 发布到根 `sdk/`：
@@ -41,7 +41,7 @@ Windows 构建机需要 VS 2022/v143 和 Qt 5.12.9 MSVC x64。日常开发直接
 ```powershell
 # 如果引擎源码有变化，先暂存它，使 SDK 清单能记录确定的 source_tree。
 git add engines/ScanEngine engines/VoiceEngine
-.\scripts\build.ps1 -Target SDKs
+.\scripts\构建.ps1 -Target SDKs
 git status --short -- sdk
 ```
 
@@ -51,11 +51,13 @@ git status --short -- sdk
 只检查仓库状态或现有产物：
 
 ```powershell
-.\scripts\status.ps1
-.\scripts\verify-artifacts.ps1
+git status --short --branch
+.\scripts\验证成果.ps1
 # 发布前执行较慢的全量 SDK 哈希与 RTX 40/50 二进制架构校验：
-.\scripts\verify-artifacts.ps1 -VerifySdkHashes -VerifyCudaArchitectures
+.\scripts\验证成果.ps1 -VerifySdkHashes -VerifyCudaArchitectures
 ```
+
+根 `scripts/` 下的自有 PowerShell 脚本统一使用中文名称。`sdk/` 内已发布工具的英文路径属于 SDK 稳定接口，`third_party/` 内脚本属于上游源码，两者不随仓库辅助脚本改名。
 
 两套 SDK 的 Core DLL 必须同时携带 RTX 40 (`sm_89`) 与 RTX 50
 (`sm_120a`) 原生 CUDA 代码；最终程序启动时也会拒绝其他计算能力。

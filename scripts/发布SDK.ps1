@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
@@ -107,7 +107,7 @@ function Write-SdkManifest {
         payload_bytes = $payloadBytes
         checksums_file = 'SHA256SUMS.txt'
         checksums_sha256 = $checksumsHash
-        generated_by = 'scripts/publish-sdks.ps1'
+        generated_by = 'scripts/发布SDK.ps1'
     }
     $json = $manifest | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($manifestPath, $json + "`n", $utf8NoBom)
@@ -352,7 +352,7 @@ foreach ($spec in $sdkSpecs) {
         }
         $toolsDestination = Join-Path $stageSdk 'tools'
         New-Item -ItemType Directory -Path $toolsDestination -Force | Out-Null
-        $materializerSource = Join-Path $PSScriptRoot 'materialize-voice-model.ps1'
+        $materializerSource = Join-Path $PSScriptRoot '合并语音模型.ps1'
         $materializerDestination = Join-Path $toolsDestination 'materialize-voice-model.ps1'
         $materializerText = [System.IO.File]::ReadAllText($materializerSource)
         $materializerText = $materializerText.Replace("`r`n", "`n").Replace("`r", "`n")
@@ -371,7 +371,7 @@ foreach ($spec in $sdkSpecs) {
     Assert-SdkManifest -SdkRoot $stageSdk -VerifyHashes
 }
 
-& (Join-Path $PSScriptRoot 'verify-cuda-architectures.ps1') `
+& (Join-Path $PSScriptRoot '验证CUDA架构.ps1') `
     -ScanCorePath (Join-Path $stagingRoot 'ScanEngine/bin/ScanEngineCore.dll') `
     -VoiceCorePath (Join-Path $stagingRoot 'VoiceEngine/bin/VoiceEngineCore.dll')
 
