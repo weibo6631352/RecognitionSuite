@@ -75,8 +75,9 @@ bool initialize_private_runtimes(const wchar_t* runtime_root,
                 return;
             }
         }
-        const std::array<std::wstring, 8> required_files = {
+        const std::array<std::wstring, 9> required_files = {
             root + L"\\VoiceEngineCore.dll",
+            root + L"\\vcomp140.dll",
             directories[1] + L"\\avcodec-62.dll",
             directories[1] + L"\\avformat-62.dll",
             directories[1] + L"\\avutil-60.dll",

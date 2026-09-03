@@ -2,7 +2,9 @@
 
 ## 产品约束
 
-RecognitionStudio 只接受 NVIDIA GeForce RTX 40 与 RTX 50 系列 GPU：
+RecognitionStudio 的正式目标是 NVIDIA GeForce RTX 40 与 RTX 50 系列 GPU。
+运行时按计算能力接受 `8.9` 或 `12.0`，因此同计算能力的其他 NVIDIA 专业卡也会
+通过架构门禁，但不属于本项目声明的 GeForce 验收矩阵：
 
 - RTX 40：设备计算能力 `8.9`，发布物必须含 `sm_89` 原生代码与 PTX；
 - RTX 50：设备计算能力 `12.0`，发布物必须含 `sm_120a` 原生代码和

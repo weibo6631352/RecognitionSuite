@@ -74,6 +74,37 @@ function Verify-SdkManifest {
         (@('sm_120', 'sm_120a') | Where-Object { $_ -in $ptxArchitectures }).Count -eq 0) {
         $failures.Add("SDK manifest does not declare RTX 40/50 PTX targets: $manifestPath")
     }
+    $gpuFamilies = @($manifest.gpu_families)
+    if ('NVIDIA GeForce RTX 40' -notin $gpuFamilies -or
+        'NVIDIA GeForce RTX 50' -notin $gpuFamilies) {
+        $failures.Add("SDK manifest does not declare both supported GPU families: $manifestPath")
+    }
+
+    if (-not $SkipSdkGitTracking) {
+        $enginePath = switch ($manifest.engine) {
+            'ScanEngine' { 'engines/ScanEngine' }
+            'VoiceEngine' { 'engines/VoiceEngine' }
+            default { $null }
+        }
+        if (-not $enginePath) {
+            $failures.Add("SDK manifest has an unknown engine identity: $manifestPath")
+        }
+        else {
+            $indexTree = @(& git -C $suiteRoot write-tree)
+            if ($LASTEXITCODE -ne 0 -or $indexTree.Count -ne 1) {
+                $failures.Add("Unable to resolve the staged source tree for: $manifestPath")
+            }
+            else {
+                $expectedSourceTree = @(
+                    & git -C $suiteRoot rev-parse "$($indexTree[0])`:$enginePath"
+                )
+                if ($LASTEXITCODE -ne 0 -or $expectedSourceTree.Count -ne 1 -or
+                    $manifest.source_tree -ne $expectedSourceTree[0]) {
+                    $failures.Add("SDK source tree does not match the staged engine tree: $manifestPath")
+                }
+            }
+        }
+    }
 
     $actualChecksumsHash = (Get-FileHash -LiteralPath $checksumsPath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actualChecksumsHash -ne $manifest.checksums_sha256) {
