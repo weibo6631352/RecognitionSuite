@@ -336,6 +336,8 @@ private:
         }
         std::vector<std::string> parts;
         parts.reserve(slices.size());
+        std::vector<SegmentConfidence> confidences;
+        confidences.reserve(slices.size());
         std::atomic<bool> cancel{false};
 
         if (!backend_->loaded()) {
@@ -352,6 +354,7 @@ private:
             const Slice& sl = slices[i];
             std::string interim;
             std::string text;
+            SegmentConfidence confidence;
             std::string ierr;
             bool ok = false;
             for (int attempt = 0; attempt < 2 && !ok; ++attempt) {
@@ -365,6 +368,7 @@ private:
                                      cancel,
                                      &interim,
                                      &text,
+                                     &confidence,
                                      &ierr);
             }
             if (!ok) {
@@ -373,6 +377,7 @@ private:
                 return;
             }
             parts.push_back(text);
+            confidences.push_back(std::move(confidence));
             {
                 std::lock_guard<std::mutex> lock(mu_);
                 auto& t = tasks_[id];
@@ -384,7 +389,7 @@ private:
             }
         }
         const std::string merged = merge_overlap_text(parts);
-        finish(id, VE_OK, {}, merged, parts, dur, slices);
+        finish(id, VE_OK, {}, merged, parts, dur, slices, confidences);
     }
 
     void finish(uint64_t id,
@@ -393,7 +398,8 @@ private:
                 const std::string& text,
                 const std::vector<std::string>& parts,
                 double dur,
-                const std::vector<Slice>& slices = {}) {
+                const std::vector<Slice>& slices = {},
+                const std::vector<SegmentConfidence>& confidences = {}) {
         std::lock_guard<std::mutex> lock(mu_);
         auto& t = tasks_[id];
         t.error = st;
@@ -408,7 +414,8 @@ private:
                                        backend_ ? backend_->model_name() : "",
                                        dur,
                                        parts,
-                                       slices);
+                                       slices,
+                                       confidences);
         } else if (st == VE_ERR_CANCELLED) {
             t.state = VE_TASK_CANCELLED;
             last_error_ = err.empty() ? "cancelled" : err;

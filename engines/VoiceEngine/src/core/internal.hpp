@@ -29,6 +29,16 @@ struct SliceConfig {
     double frame_sec = 0.02;
 };
 
+struct TokenConfidence {
+    std::string text;
+    double probability = 0.0;
+};
+
+struct SegmentConfidence {
+    double probability = 0.0;
+    std::vector<TokenConfidence> tokens;
+};
+
 std::string wide_to_utf8(const wchar_t* s);
 std::wstring utf8_to_wide(const std::string& s);
 std::string json_escape(const std::string& s);
@@ -57,7 +67,8 @@ std::string build_result_json(const std::string& text,
                               const std::string& model,
                               double duration_sec,
                               const std::vector<std::string>& segment_texts,
-                              const std::vector<Slice>& slices);
+                              const std::vector<Slice>& slices,
+                              const std::vector<SegmentConfidence>& confidences);
 
 char* dll_strdup(const std::string& s);
 
@@ -75,6 +86,7 @@ public:
                        const std::atomic<bool>& cancel,
                        std::string* interim,
                        std::string* text,
+                       SegmentConfidence* confidence,
                        std::string* err) = 0;
     virtual std::string device_name() const = 0;
     virtual std::string model_name() const = 0;

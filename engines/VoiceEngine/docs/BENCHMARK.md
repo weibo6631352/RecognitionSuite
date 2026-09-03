@@ -6,7 +6,7 @@ The 技术路线 requires CER / 标点 F1 / 专有名词 to meet a project thres
 
 | Metric | Threshold |
 |---|---|
-| CER | ≤ 0.10 |
+| CER | ≤ 0.02（即 `1-CER` ≥ 0.98） |
 | 标点 F1 | ≥ 0.75 |
 | 专有名词 F1 | ≥ 0.70 |
 

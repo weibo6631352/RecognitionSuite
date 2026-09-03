@@ -254,6 +254,7 @@ public:
                const std::atomic<bool>& cancel,
                std::string* interim,
                std::string* text,
+               SegmentConfidence* confidence,
                std::string* err) override {
         if (!loaded()) {
             if (err) {
@@ -316,6 +317,12 @@ public:
         llama_sampler_chain_add(smpl, llama_sampler_init_greedy());
 
         std::string out;
+        double probabilityLogSum = 0.0;
+        std::size_t probabilityCount = 0;
+        if (confidence) {
+            confidence->probability = 0.0;
+            confidence->tokens.clear();
+        }
         // A 45-second hard streaming window can approach 256 Chinese tokens
         // during fast speech. Keep headroom for punctuation and the final
         // clause; EOG still ends normal generation before this guard.
@@ -329,11 +336,31 @@ public:
                 return false;
             }
             const llama_token id = llama_sampler_sample(smpl, lctx_, -1);
+            double probability = 0.0;
+            const float* logits = llama_get_logits_ith(lctx_, -1);
+            const int32_t vocabularySize = llama_vocab_n_tokens(vocab_);
+            if (logits && id >= 0 && id < vocabularySize) {
+                float maximum = logits[0];
+                for (int32_t token = 1; token < vocabularySize; ++token)
+                    maximum = (std::max)(maximum, logits[token]);
+                double denominator = 0.0;
+                for (int32_t token = 0; token < vocabularySize; ++token)
+                    denominator += std::exp(double(logits[token]) - double(maximum));
+                if (denominator > 0.0)
+                    probability = std::exp(double(logits[id]) - double(maximum)) / denominator;
+            }
             llama_sampler_accept(smpl, id);
             if (llama_vocab_is_eog(vocab_, id)) {
                 break;
             }
-            out += token_to_string(vocab_, id);
+            const std::string piece = token_to_string(vocab_, id);
+            out += piece;
+            if (probability > 0.0) {
+                probabilityLogSum += std::log(probability);
+                ++probabilityCount;
+            }
+            if (confidence)
+                confidence->tokens.push_back({piece, probability});
             if (interim) {
                 *interim = out;
             }
@@ -351,6 +378,9 @@ public:
         if (text) {
             *text = normalize_zh_text(out);
         }
+        if (confidence && probabilityCount > 0)
+            confidence->probability = std::exp(
+                probabilityLogSum / static_cast<double>(probabilityCount));
         return true;
     }
 

@@ -310,9 +310,9 @@ int cmd_benchmark(ve_context* ctx, const wchar_t* dataset, const wchar_t* model_
     } while (FindNextFileW(h, &fd));
     FindClose(h);
     const double cer = cer_den > 0 ? cer_num / cer_den : 0;
-    std::printf("{\"cer\":%.6f,\"punct_f1\":null,\"proper_noun_f1\":null,\"threshold\":{\"cer\":0.10,\"punct_f1\":0.75,\"proper_noun_f1\":0.70}}\n",
-                cer);
-    std::fprintf(stderr, "CER=%.4f (threshold 0.10)\n", cer);
+    std::printf("{\"cer\":%.6f,\"accuracy\":%.6f,\"punct_f1\":null,\"proper_noun_f1\":null,\"threshold\":{\"cer\":0.02,\"accuracy\":0.98,\"punct_f1\":0.75,\"proper_noun_f1\":0.70}}\n",
+                cer, 1.0 - cer);
+    std::fprintf(stderr, "CER=%.4f (threshold 0.02; accuracy target 0.98)\n", cer);
     return 0;
 }
 
