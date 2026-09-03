@@ -93,6 +93,13 @@ voiceengine::Result result = task.wait();
 use(result.text, result.json);
 ```
 
+`result.json` uses schema version 2. In addition to final text, language,
+duration, model, device and timestamped segments, each segment contains an
+uncalibrated `confidence` object and selected decoder `tokens`. The confidence
+value is the geometric mean of transcription token probabilities; prompt
+wrapper tokens before `<asr_text>` are excluded. It is diagnostic evidence and
+must not be used as a substitute for CER against frozen references.
+
 `Task` and `Stream` are movable and not copyable. They retain their context, so
 the underlying C context remains alive until its last operation object is
 destroyed. `Task::result()` copies the DLL-owned strings and releases the task.

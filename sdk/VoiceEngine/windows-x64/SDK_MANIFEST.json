@@ -4,8 +4,8 @@
     "engine_version":  "0.1.0",
     "sdk_api_version":  1,
     "platform":  "windows-x64",
-    "source_commit":  "cfcbf6388f0602ca1e5fa6eeac92cd53cb6ce58e",
-    "source_tree":  "943c1ebafecfd17211d6fd23016a9f450fbf2e0a",
+    "source_commit":  "3762fb225b07866538484dcdded1d8cb354bbde1",
+    "source_tree":  "78339ce1299595c06ae5db93c1b470d4f8d4d5f8",
     "build_preset":  "win-qt5.12.9-msvc-cuda",
     "payload_format":  "expanded-directory",
     "model_packaging":  "gguf-part1-part2; materialize before distribution",
@@ -24,8 +24,8 @@
                                    "sm_120a"
                                ],
     "payload_file_count":  41,
-    "payload_bytes":  5671966909,
+    "payload_bytes":  5671967355,
     "checksums_file":  "SHA256SUMS.txt",
-    "checksums_sha256":  "92849e3a9b9ba31e5aecd5b71bbd37f533710c47c0da24591b67e702c7d001a0",
+    "checksums_sha256":  "128f988c5418c940dea383b43f6f086da670cb9bde26b3534912e18896a6d575",
     "generated_by":  "scripts/构建.ps1 -Target SDKs"
 }
