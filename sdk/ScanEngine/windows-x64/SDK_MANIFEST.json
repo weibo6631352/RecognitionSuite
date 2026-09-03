@@ -4,7 +4,7 @@
     "engine_version":  "0.1.0",
     "sdk_api_version":  1,
     "platform":  "windows-x64",
-    "source_commit":  "f380a8f4251725e3b27ada605deb3ee4916db36d",
+    "source_commit":  "cfcbf6388f0602ca1e5fa6eeac92cd53cb6ce58e",
     "source_tree":  "5a760b5e11ab8a11ed13dc8e0a1048ecbcbd0114",
     "build_preset":  "win-qt5.12.9-msvc-mlx-cuda",
     "payload_format":  "expanded-directory",

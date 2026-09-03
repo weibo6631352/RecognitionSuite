@@ -57,6 +57,8 @@ add_executable(RecognitionStudio WIN32
     src/main.cpp
     src/main_window.cpp
     src/main_window.h
+    src/acceptance_validation.cpp
+    src/acceptance_validation.h
     src/mic_capture.cpp
     src/mic_capture.h
     resources/resources.qrc)
@@ -66,6 +68,39 @@ target_link_libraries(RecognitionStudio PRIVATE
     VoiceEngine::CXX
     ScanEngine::CXX
     ole32)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(RecognitionStudioAcceptanceTests
+        tests/acceptance_validation_test.cpp
+        src/acceptance_validation.cpp
+        src/acceptance_validation.h)
+    target_include_directories(RecognitionStudioAcceptanceTests PRIVATE src)
+    target_link_libraries(RecognitionStudioAcceptanceTests PRIVATE
+        Qt5::Core Qt5::Gui)
+    set_target_properties(RecognitionStudioAcceptanceTests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
+    add_test(NAME RecognitionStudioAcceptanceTests
+        COMMAND $<TARGET_FILE:RecognitionStudioAcceptanceTests>)
+
+    add_executable(RecognitionStudioUiTests
+        tests/main_window_test.cpp
+        src/main_window.cpp
+        src/main_window.h
+        src/acceptance_validation.cpp
+        src/acceptance_validation.h
+        src/mic_capture.cpp
+        src/mic_capture.h)
+    target_include_directories(RecognitionStudioUiTests PRIVATE src)
+    target_link_libraries(RecognitionStudioUiTests PRIVATE
+        Qt5::Widgets VoiceEngine::CXX ScanEngine::CXX ole32)
+    set_target_properties(RecognitionStudioUiTests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
+    add_test(NAME RecognitionStudioUiTests
+        COMMAND $<TARGET_FILE:RecognitionStudioUiTests>)
+endif()
 
 set_target_properties(RecognitionStudio PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

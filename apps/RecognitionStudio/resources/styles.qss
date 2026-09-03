@@ -32,6 +32,21 @@ QLabel#sectionTitle {
     font-weight: 600;
 }
 
+QLabel#metricValue, QLabel#verdictValue {
+    color: #173f67;
+    font-size: 17px;
+    font-weight: 600;
+    padding: 6px 0;
+}
+
+QLabel#verdictValue[passed="true"] {
+    color: #087a55;
+}
+
+QLabel#verdictValue[passed="false"] {
+    color: #b0443a;
+}
+
 QLabel#runtimeName {
     color: #25384a;
     font-weight: 600;
@@ -83,7 +98,7 @@ QPushButton#recordButton[recording="true"] {
     font-weight: 600;
 }
 
-QLineEdit, QPlainTextEdit {
+QLineEdit, QPlainTextEdit, QTableWidget {
     background: #ffffff;
     border: 1px solid #ccd6df;
     border-radius: 4px;

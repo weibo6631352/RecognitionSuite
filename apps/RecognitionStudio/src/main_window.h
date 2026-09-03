@@ -1,11 +1,13 @@
 #pragma once
 
+#include "acceptance_validation.h"
 #include "mic_capture.h"
 
 #include <voiceengine/voiceengine.hpp>
 #include <scanengine/scanengine.hpp>
 
 #include <QMainWindow>
+#include <QJsonArray>
 
 #include <atomic>
 #include <deque>
@@ -18,6 +20,7 @@ class QLineEdit;
 class QPlainTextEdit;
 class QProgressBar;
 class QPushButton;
+class QTableWidget;
 class QTimer;
 
 namespace speechdoc {
@@ -55,6 +58,22 @@ private:
     void parseDocument();
     void cancelDocument();
     void openDocumentOutput();
+
+    void chooseAcceptanceManifest();
+    void chooseAcceptanceOutput();
+    void startAcceptance();
+    void cancelAcceptance();
+    void openAcceptanceOutput();
+    void startNextAcceptanceSample();
+    void completeAcceptanceVoice(const voiceengine::Result& result);
+    void completeAcceptanceDocument(const scanengine::Result& result);
+    void failAcceptanceSample(const QString& message);
+    void recordAcceptanceSample(const QString& hypothesis,
+                                const acceptance::ConfidenceSummary& confidence,
+                                const QString& status,
+                                const QJsonObject& evidence = {});
+    void finishAcceptance(const QString& state = QString());
+    void updateAcceptanceSummary();
 
     void setRuntimeStatus(QLabel* label, bool ready, const QString& text);
     void appendLog(QPlainTextEdit* output, const QString& text);
@@ -100,6 +119,32 @@ private:
     QProgressBar* documentProgress_ = nullptr;
     QPlainTextEdit* documentResult_ = nullptr;
     QString lastDocumentOutput_;
+
+    acceptance::Dataset acceptanceDataset_;
+    bool acceptanceDatasetLoaded_ = false;
+    bool acceptanceRunning_ = false;
+    bool acceptanceCancelRequested_ = false;
+    int acceptanceIndex_ = 0;
+    int acceptanceFailures_ = 0;
+    qint64 acceptanceReferenceCharacters_ = 0;
+    qint64 acceptanceHypothesisCharacters_ = 0;
+    qint64 acceptanceEditDistance_ = 0;
+    int acceptanceConfidenceCount_ = 0;
+    double acceptanceConfidenceTotal_ = 0.0;
+    QString acceptanceRunDirectory_;
+    QJsonArray acceptanceResults_;
+
+    QLineEdit* acceptanceManifestPath_ = nullptr;
+    QLineEdit* acceptanceOutputPath_ = nullptr;
+    QPushButton* acceptanceStartButton_ = nullptr;
+    QPushButton* acceptanceCancelButton_ = nullptr;
+    QPushButton* acceptanceOpenButton_ = nullptr;
+    QProgressBar* acceptanceProgress_ = nullptr;
+    QLabel* acceptanceDatasetStatus_ = nullptr;
+    QLabel* acceptanceAccuracy_ = nullptr;
+    QLabel* acceptanceConfidence_ = nullptr;
+    QLabel* acceptanceVerdict_ = nullptr;
+    QTableWidget* acceptanceTable_ = nullptr;
 };
 
 }  // namespace speechdoc

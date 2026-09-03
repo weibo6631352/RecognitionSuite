@@ -3,12 +3,16 @@
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QDesktopServices>
+#include <QDateTime>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFrame>
 #include <QGridLayout>
+#include <QHeaderView>
 #include <QHBoxLayout>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -16,13 +20,16 @@
 #include <QPlainTextEdit>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTabWidget>
+#include <QTableWidget>
 #include <QTextCursor>
 #include <QTime>
 #include <QTimer>
 #include <QUrl>
+#include <QVariant>
 #include <QVBoxLayout>
 
 #include <cstdint>
@@ -52,6 +59,19 @@ QString cudaArchitecture(const voiceengine::CudaInfo& info) {
     return QStringLiteral("sm_%1%2")
         .arg(info.compute_major)
         .arg(info.compute_minor);
+}
+
+QString safeFileName(QString value) {
+    value.replace(QRegularExpression(QStringLiteral("[<>:\"/\\\\|?*\\r\\n\\t]")),
+                  QStringLiteral("_"));
+    value = value.trimmed();
+    while (value.endsWith(QLatin1Char('.')))
+        value.chop(1);
+    return value.isEmpty() ? QStringLiteral("dataset") : value.left(100);
+}
+
+QString percent(double value) {
+    return QStringLiteral("%1%").arg(value * 100.0, 0, 'f', 2);
 }
 
 QFrame* makeRuntimeCard(const QString& name, QLabel** status,
@@ -291,6 +311,88 @@ void MainWindow::buildUi() {
 
     tabs->addTab(speechPage, QStringLiteral("语音识别"));
     tabs->addTab(documentPage, QStringLiteral("纸质扫描识别"));
+
+    auto* acceptancePage = new QWidget(tabs);
+    auto* acceptanceLayout = new QVBoxLayout(acceptancePage);
+    acceptanceLayout->setContentsMargins(16, 16, 16, 16);
+    acceptanceLayout->setSpacing(10);
+    auto* acceptanceTitle = new QLabel(QStringLiteral("冻结测试集验收验证"), acceptancePage);
+    acceptanceTitle->setObjectName(QStringLiteral("sectionTitle"));
+    auto* acceptanceHint = new QLabel(
+        QStringLiteral("在界面内批量调用已发布 SDK，以统一字符编辑距离验证 98% 指标；模型置信度仅作辅助诊断。"),
+        acceptancePage);
+    acceptanceHint->setObjectName(QStringLiteral("hintText"));
+    acceptanceHint->setWordWrap(true);
+    acceptanceLayout->addWidget(acceptanceTitle);
+    acceptanceLayout->addWidget(acceptanceHint);
+    acceptanceLayout->addLayout(makePathRow(
+        &acceptanceManifestPath_, QStringLiteral("选择 RecognitionStudio-Acceptance/1 清单"),
+        QStringLiteral("选择清单"), acceptancePage,
+        [this] { chooseAcceptanceManifest(); }));
+    acceptanceLayout->addLayout(makePathRow(
+        &acceptanceOutputPath_, QStringLiteral("验收证据输出目录"),
+        QStringLiteral("选择目录"), acceptancePage,
+        [this] { chooseAcceptanceOutput(); }));
+    acceptanceOutputPath_->setText(
+        QDir(QCoreApplication::applicationDirPath())
+            .filePath(QStringLiteral("output/acceptance")));
+
+    acceptanceDatasetStatus_ = new QLabel(QStringLiteral("尚未加载冻结测试集"), acceptancePage);
+    acceptanceDatasetStatus_->setWordWrap(true);
+    acceptanceLayout->addWidget(acceptanceDatasetStatus_);
+
+    auto* acceptanceMetrics = new QGridLayout;
+    acceptanceMetrics->addWidget(new QLabel(QStringLiteral("实际准确率"), acceptancePage), 0, 0);
+    acceptanceMetrics->addWidget(new QLabel(QStringLiteral("模型置信度"), acceptancePage), 0, 1);
+    acceptanceMetrics->addWidget(new QLabel(QStringLiteral("验收结论"), acceptancePage), 0, 2);
+    acceptanceAccuracy_ = new QLabel(QStringLiteral("—"), acceptancePage);
+    acceptanceConfidence_ = new QLabel(QStringLiteral("—"), acceptancePage);
+    acceptanceVerdict_ = new QLabel(QStringLiteral("未验证"), acceptancePage);
+    acceptanceAccuracy_->setObjectName(QStringLiteral("metricValue"));
+    acceptanceConfidence_->setObjectName(QStringLiteral("metricValue"));
+    acceptanceVerdict_->setObjectName(QStringLiteral("verdictValue"));
+    acceptanceMetrics->addWidget(acceptanceAccuracy_, 1, 0);
+    acceptanceMetrics->addWidget(acceptanceConfidence_, 1, 1);
+    acceptanceMetrics->addWidget(acceptanceVerdict_, 1, 2);
+    acceptanceLayout->addLayout(acceptanceMetrics);
+
+    acceptanceProgress_ = new QProgressBar(acceptancePage);
+    acceptanceProgress_->setRange(0, 100);
+    acceptanceProgress_->setValue(0);
+    acceptanceProgress_->setTextVisible(false);
+    acceptanceLayout->addWidget(acceptanceProgress_);
+
+    auto* acceptanceButtons = new QHBoxLayout;
+    acceptanceStartButton_ = new QPushButton(QStringLiteral("开始正式验证"), acceptancePage);
+    acceptanceStartButton_->setObjectName(QStringLiteral("primaryButton"));
+    acceptanceCancelButton_ = new QPushButton(QStringLiteral("取消验证"), acceptancePage);
+    acceptanceOpenButton_ = new QPushButton(QStringLiteral("打开证据目录"), acceptancePage);
+    acceptanceButtons->addWidget(acceptanceStartButton_);
+    acceptanceButtons->addWidget(acceptanceCancelButton_);
+    acceptanceButtons->addWidget(acceptanceOpenButton_);
+    acceptanceButtons->addStretch(1);
+    acceptanceLayout->addLayout(acceptanceButtons);
+
+    acceptanceTable_ = new QTableWidget(acceptancePage);
+    acceptanceTable_->setColumnCount(6);
+    acceptanceTable_->setHorizontalHeaderLabels({
+        QStringLiteral("样本"), QStringLiteral("状态"),
+        QStringLiteral("真值字符"), QStringLiteral("编辑距离"),
+        QStringLiteral("实际准确率"), QStringLiteral("置信度")});
+    acceptanceTable_->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    for (int column = 1; column < acceptanceTable_->columnCount(); ++column)
+        acceptanceTable_->horizontalHeader()->setSectionResizeMode(column, QHeaderView::ResizeToContents);
+    acceptanceTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    acceptanceTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
+    acceptanceLayout->addWidget(acceptanceTable_, 1);
+
+    connect(acceptanceStartButton_, &QPushButton::clicked,
+            this, &MainWindow::startAcceptance);
+    connect(acceptanceCancelButton_, &QPushButton::clicked,
+            this, &MainWindow::cancelAcceptance);
+    connect(acceptanceOpenButton_, &QPushButton::clicked,
+            this, &MainWindow::openAcceptanceOutput);
+    tabs->addTab(acceptancePage, QStringLiteral("验收验证"));
     root->addWidget(tabs, 1);
     statusBar()->showMessage(QStringLiteral("正在检查两套 SDK…"));
 }
@@ -379,7 +481,8 @@ void MainWindow::setRuntimeStatus(QLabel* label, bool ready,
 
 bool MainWindow::operationActive() const {
     return speechModelLoading_ || speechTask_ || documentTask_
-        || speechStream_ || (microphone_ && microphone_->running());
+        || speechStream_ || acceptanceRunning_
+        || (microphone_ && microphone_->running());
 }
 
 void MainWindow::updateControls() {
@@ -409,6 +512,16 @@ void MainWindow::updateControls() {
         && !documentPath_->text().trimmed().isEmpty());
     cancelDocumentButton_->setEnabled(documentBusy);
     openOutputButton_->setEnabled(!lastDocumentOutput_.isEmpty());
+
+    const bool acceptanceRuntimeReady = acceptanceDatasetLoaded_
+        && (acceptanceDataset_.kind == acceptance::Kind::Scan
+                ? documentReady_
+                : speechReady_ && speechContext_
+                      && speechContext_->model_loaded());
+    acceptanceStartButton_->setEnabled(
+        acceptanceRuntimeReady && !operationActive());
+    acceptanceCancelButton_->setEnabled(acceptanceRunning_);
+    acceptanceOpenButton_->setEnabled(!acceptanceRunDirectory_.isEmpty());
 }
 
 void MainWindow::chooseAudio() {
@@ -717,6 +830,405 @@ void MainWindow::openDocumentOutput() {
         QDesktopServices::openUrl(QUrl::fromLocalFile(lastDocumentOutput_));
 }
 
+void MainWindow::chooseAcceptanceManifest() {
+    if (acceptanceRunning_)
+        return;
+    const QString path = QFileDialog::getOpenFileName(
+        this, QStringLiteral("选择冻结测试集清单"),
+        acceptanceManifestPath_->text(), QStringLiteral("JSON 清单 (*.json)"));
+    if (path.isEmpty())
+        return;
+    acceptance::Dataset dataset;
+    QString error;
+    if (!acceptance::loadDataset(path, &dataset, &error)) {
+        acceptanceDatasetLoaded_ = false;
+        acceptanceDatasetStatus_->setText(QStringLiteral("清单无效：%1").arg(error));
+        showOperationError(QStringLiteral("验收验证"), error);
+        updateControls();
+        return;
+    }
+    acceptanceDataset_ = std::move(dataset);
+    acceptanceDatasetLoaded_ = true;
+    acceptanceManifestPath_->setText(QDir::toNativeSeparators(path));
+    acceptanceManifestPath_->setReadOnly(true);
+    acceptanceDatasetStatus_->setText(
+        QStringLiteral("已冻结：%1 · %2 · %3 个样本 · SHA-256 %4… · 阈值 %5")
+            .arg(acceptanceDataset_.id,
+                 acceptanceDataset_.kind == acceptance::Kind::Scan
+                     ? QStringLiteral("纸质扫描") : QStringLiteral("语音识别"))
+            .arg(acceptanceDataset_.samples.size())
+            .arg(acceptanceDataset_.manifestSha256.left(12),
+                 percent(acceptanceDataset_.threshold)));
+    acceptanceVerdict_->setText(QStringLiteral("未验证"));
+    acceptanceVerdict_->setProperty("passed", QVariant());
+    acceptanceVerdict_->style()->unpolish(acceptanceVerdict_);
+    acceptanceVerdict_->style()->polish(acceptanceVerdict_);
+    acceptanceAccuracy_->setText(QStringLiteral("—"));
+    acceptanceConfidence_->setText(QStringLiteral("—"));
+    updateControls();
+}
+
+void MainWindow::chooseAcceptanceOutput() {
+    if (acceptanceRunning_)
+        return;
+    const QString path = QFileDialog::getExistingDirectory(
+        this, QStringLiteral("选择验收证据输出目录"),
+        acceptanceOutputPath_->text());
+    if (!path.isEmpty())
+        acceptanceOutputPath_->setText(QDir::toNativeSeparators(path));
+}
+
+void MainWindow::startAcceptance() {
+    if (!acceptanceDatasetLoaded_ || operationActive())
+        return;
+    if (acceptanceDataset_.kind == acceptance::Kind::Voice
+        && (!speechContext_ || !speechContext_->model_loaded())) {
+        showOperationError(QStringLiteral("验收验证"),
+                           QStringLiteral("请先在语音识别页加载语音模型"));
+        return;
+    }
+    const QString outputRoot = acceptanceOutputPath_->text().trimmed();
+    if (outputRoot.isEmpty() || !QDir().mkpath(outputRoot)) {
+        showOperationError(QStringLiteral("验收验证"),
+                           QStringLiteral("验收证据输出目录不可用"));
+        return;
+    }
+    const QString runName =
+        QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss_"))
+        + safeFileName(acceptanceDataset_.id);
+    acceptanceRunDirectory_ = QDir(outputRoot).filePath(runName);
+    if (!QDir().mkpath(acceptanceRunDirectory_)) {
+        showOperationError(QStringLiteral("验收验证"),
+                           QStringLiteral("无法创建本次验收证据目录"));
+        return;
+    }
+    acceptanceRunning_ = true;
+    acceptanceCancelRequested_ = false;
+    acceptanceIndex_ = 0;
+    acceptanceFailures_ = 0;
+    acceptanceReferenceCharacters_ = 0;
+    acceptanceHypothesisCharacters_ = 0;
+    acceptanceEditDistance_ = 0;
+    acceptanceConfidenceCount_ = 0;
+    acceptanceConfidenceTotal_ = 0.0;
+    acceptanceResults_ = QJsonArray();
+    acceptanceTable_->setRowCount(0);
+    acceptanceProgress_->setValue(0);
+    acceptanceAccuracy_->setText(QStringLiteral("—"));
+    acceptanceConfidence_->setText(QStringLiteral("—"));
+    acceptanceVerdict_->setText(QStringLiteral("验证中"));
+    acceptanceVerdict_->setProperty("passed", QVariant());
+    acceptanceVerdict_->style()->unpolish(acceptanceVerdict_);
+    acceptanceVerdict_->style()->polish(acceptanceVerdict_);
+    statusBar()->showMessage(QStringLiteral("正在执行冻结测试集验收验证"));
+    updateControls();
+    startNextAcceptanceSample();
+}
+
+void MainWindow::cancelAcceptance() {
+    if (!acceptanceRunning_)
+        return;
+    acceptanceCancelRequested_ = true;
+    try {
+        if (acceptanceDataset_.kind == acceptance::Kind::Voice && speechTask_)
+            speechTask_->cancel();
+        if (acceptanceDataset_.kind == acceptance::Kind::Scan && documentTask_)
+            documentTask_->cancel();
+    } catch (const std::exception& error) {
+        statusBar()->showMessage(QString::fromUtf8(error.what()));
+    }
+    acceptanceVerdict_->setText(QStringLiteral("正在取消"));
+    if (!speechTask_ && !documentTask_)
+        finishAcceptance(QStringLiteral("cancelled"));
+}
+
+void MainWindow::openAcceptanceOutput() {
+    if (!acceptanceRunDirectory_.isEmpty())
+        QDesktopServices::openUrl(QUrl::fromLocalFile(acceptanceRunDirectory_));
+}
+
+void MainWindow::startNextAcceptanceSample() {
+    if (!acceptanceRunning_)
+        return;
+    if (acceptanceCancelRequested_) {
+        finishAcceptance(QStringLiteral("cancelled"));
+        return;
+    }
+    if (acceptanceIndex_ >= acceptanceDataset_.samples.size()) {
+        finishAcceptance();
+        return;
+    }
+    const acceptance::Sample& sample = acceptanceDataset_.samples[acceptanceIndex_];
+    const QString sampleDirectory = QDir(acceptanceRunDirectory_)
+        .filePath(QStringLiteral("%1_%2")
+                      .arg(acceptanceIndex_ + 1, 4, 10, QLatin1Char('0'))
+                      .arg(safeFileName(sample.id)));
+    if (!QDir().mkpath(sampleDirectory)) {
+        failAcceptanceSample(QStringLiteral("无法创建样本证据目录"));
+        return;
+    }
+    if (acceptance::sha256File(sample.inputPath) != sample.inputSha256) {
+        failAcceptanceSample(QStringLiteral("运行前输入 SHA-256 已变化"));
+        return;
+    }
+    try {
+        if (acceptanceDataset_.kind == acceptance::Kind::Voice) {
+            auto task = speechContext_->submit_file(toWidePath(sample.inputPath));
+            speechTask_ = std::make_unique<voiceengine::Task>(std::move(task));
+        } else {
+            auto task = documentContext_->submit_file(
+                toWidePath(sample.inputPath), toWidePath(sampleDirectory),
+                SE_EFFORT_MEDIUM);
+            documentTask_ = std::make_unique<scanengine::Task>(std::move(task));
+        }
+        statusBar()->showMessage(
+            QStringLiteral("验收样本 %1/%2：%3")
+                .arg(acceptanceIndex_ + 1)
+                .arg(acceptanceDataset_.samples.size())
+                .arg(sample.id));
+    } catch (const std::exception& error) {
+        failAcceptanceSample(QString::fromUtf8(error.what()));
+    }
+    updateControls();
+}
+
+void MainWindow::completeAcceptanceVoice(const voiceengine::Result& result) {
+    const acceptance::ConfidenceSummary confidence =
+        acceptance::extractVoiceConfidence(QByteArray::fromStdString(result.json));
+    QJsonObject evidence;
+    evidence.insert(QStringLiteral("engine_result"),
+                    QJsonDocument::fromJson(QByteArray::fromStdString(result.json)).object());
+    evidence.insert(QStringLiteral("duration_sec"), result.duration_sec);
+    recordAcceptanceSample(QString::fromUtf8(result.text.c_str()), confidence,
+                           QStringLiteral("completed"), evidence);
+}
+
+void MainWindow::completeAcceptanceDocument(const scanengine::Result& result) {
+    const QString jsonPath = fromWidePath(result.json_path);
+    QString error;
+    const QString hypothesis = acceptance::extractScanText(jsonPath, &error);
+    if (!error.isEmpty()) {
+        failAcceptanceSample(error);
+        return;
+    }
+    const acceptance::ConfidenceSummary confidence =
+        acceptance::extractScanConfidence(jsonPath);
+    QJsonObject evidence;
+    evidence.insert(QStringLiteral("output_dir"), fromWidePath(result.output_dir));
+    evidence.insert(QStringLiteral("excel_path"), fromWidePath(result.excel_path));
+    evidence.insert(QStringLiteral("markdown_path"), fromWidePath(result.markdown_path));
+    evidence.insert(QStringLiteral("json_path"), jsonPath);
+    evidence.insert(QStringLiteral("fallback_count"), result.fallback_count);
+    recordAcceptanceSample(hypothesis, confidence,
+                           QStringLiteral("completed"), evidence);
+}
+
+void MainWindow::failAcceptanceSample(const QString& message) {
+    QJsonObject evidence;
+    evidence.insert(QStringLiteral("error"), message);
+    recordAcceptanceSample({}, {}, QStringLiteral("failed"), evidence);
+}
+
+void MainWindow::recordAcceptanceSample(
+    const QString& hypothesis,
+    const acceptance::ConfidenceSummary& confidence,
+    const QString& state,
+    const QJsonObject& evidence) {
+    if (!acceptanceRunning_ || acceptanceIndex_ >= acceptanceDataset_.samples.size())
+        return;
+    const acceptance::Sample& sample = acceptanceDataset_.samples[acceptanceIndex_];
+    const acceptance::Score score =
+        acceptance::compare(sample.reference, hypothesis, acceptanceDataset_);
+    acceptanceReferenceCharacters_ += score.referenceCharacters;
+    acceptanceHypothesisCharacters_ += score.hypothesisCharacters;
+    acceptanceEditDistance_ += score.editDistance;
+    if (confidence.count > 0) {
+        acceptanceConfidenceCount_ += confidence.count;
+        acceptanceConfidenceTotal_ += confidence.mean * confidence.count;
+    }
+
+    const QString sampleDirectory = QDir(acceptanceRunDirectory_)
+        .filePath(QStringLiteral("%1_%2")
+                      .arg(acceptanceIndex_ + 1, 4, 10, QLatin1Char('0'))
+                      .arg(safeFileName(sample.id)));
+    QString sampleState = state;
+    QString writeError;
+    const bool referenceWritten = acceptance::writeUtf8(
+        QDir(sampleDirectory).filePath(QStringLiteral("reference.txt")),
+        sample.reference, &writeError);
+    const bool hypothesisWritten = referenceWritten && acceptance::writeUtf8(
+        QDir(sampleDirectory).filePath(QStringLiteral("hypothesis.txt")),
+        hypothesis, &writeError);
+    if (!hypothesisWritten && sampleState == QLatin1String("completed"))
+        sampleState = QStringLiteral("evidence_failed");
+
+    QJsonObject result;
+    result.insert(QStringLiteral("id"), sample.id);
+    result.insert(QStringLiteral("input"), sample.inputPath);
+    result.insert(QStringLiteral("input_sha256"), acceptance::sha256File(sample.inputPath));
+    result.insert(QStringLiteral("reference_sha256"), sample.referenceSha256);
+    result.insert(QStringLiteral("state"), sampleState);
+    result.insert(QStringLiteral("reference_characters"),
+                  static_cast<double>(score.referenceCharacters));
+    result.insert(QStringLiteral("hypothesis_characters"),
+                  static_cast<double>(score.hypothesisCharacters));
+    result.insert(QStringLiteral("edit_distance"),
+                  static_cast<double>(score.editDistance));
+    result.insert(QStringLiteral("accuracy"), score.accuracy());
+    if (confidence.count > 0) {
+        QJsonObject confidenceObject;
+        confidenceObject.insert(QStringLiteral("mean"), confidence.mean);
+        confidenceObject.insert(QStringLiteral("minimum"), confidence.minimum);
+        confidenceObject.insert(QStringLiteral("maximum"), confidence.maximum);
+        confidenceObject.insert(QStringLiteral("count"), confidence.count);
+        confidenceObject.insert(QStringLiteral("source"), confidence.source);
+        confidenceObject.insert(QStringLiteral("calibrated"), false);
+        result.insert(QStringLiteral("confidence"), confidenceObject);
+    }
+    QJsonObject recordedEvidence = evidence;
+    if (!hypothesisWritten)
+        recordedEvidence.insert(QStringLiteral("evidence_write_error"), writeError);
+    result.insert(QStringLiteral("evidence"), recordedEvidence);
+    if (!acceptance::writeJson(
+            QDir(sampleDirectory).filePath(QStringLiteral("sample.json")),
+            result, &writeError)
+        && sampleState == QLatin1String("completed")) {
+        sampleState = QStringLiteral("evidence_failed");
+        result.insert(QStringLiteral("state"), sampleState);
+        recordedEvidence.insert(QStringLiteral("evidence_write_error"), writeError);
+        result.insert(QStringLiteral("evidence"), recordedEvidence);
+    }
+    if (sampleState != QLatin1String("completed"))
+        ++acceptanceFailures_;
+    acceptanceResults_.append(result);
+
+    const int row = acceptanceTable_->rowCount();
+    acceptanceTable_->insertRow(row);
+    const QStringList values = {
+        sample.id,
+        sampleState == QLatin1String("completed") ? QStringLiteral("完成")
+                                                  : QStringLiteral("失败"),
+        QString::number(score.referenceCharacters),
+        QString::number(score.editDistance),
+        percent(score.accuracy()),
+        confidence.count > 0 ? percent(confidence.mean) + QStringLiteral("（未校准）")
+                             : QStringLiteral("不可用")};
+    for (int column = 0; column < values.size(); ++column)
+        acceptanceTable_->setItem(row, column, new QTableWidgetItem(values[column]));
+
+    ++acceptanceIndex_;
+    acceptanceProgress_->setValue(
+        acceptanceDataset_.samples.isEmpty() ? 0
+        : acceptanceIndex_ * 100 / acceptanceDataset_.samples.size());
+    updateAcceptanceSummary();
+    QTimer::singleShot(0, this, &MainWindow::startNextAcceptanceSample);
+}
+
+void MainWindow::updateAcceptanceSummary() {
+    if (acceptanceReferenceCharacters_ > 0) {
+        const double accuracy = 1.0
+            - static_cast<double>(acceptanceEditDistance_)
+                  / static_cast<double>(acceptanceReferenceCharacters_);
+        acceptanceAccuracy_->setText(
+            QStringLiteral("%1 · 距离 %2 / 真值 %3")
+                .arg(percent(accuracy))
+                .arg(acceptanceEditDistance_)
+                .arg(acceptanceReferenceCharacters_));
+    }
+    acceptanceConfidence_->setText(
+        acceptanceConfidenceCount_ > 0
+            ? percent(acceptanceConfidenceTotal_ / acceptanceConfidenceCount_)
+                  + QStringLiteral(" · 未校准")
+            : QStringLiteral("不可用"));
+}
+
+void MainWindow::finishAcceptance(const QString& requestedState) {
+    if (!acceptanceRunning_)
+        return;
+    const bool cancelled = requestedState == QLatin1String("cancelled");
+    const double accuracy = acceptanceReferenceCharacters_ > 0
+        ? 1.0 - static_cast<double>(acceptanceEditDistance_)
+                    / static_cast<double>(acceptanceReferenceCharacters_)
+        : 0.0;
+    const bool complete = !cancelled
+        && acceptanceIndex_ == acceptanceDataset_.samples.size();
+    const bool valid = complete && acceptanceFailures_ == 0
+        && acceptanceReferenceCharacters_ > 0;
+    const bool passed = valid && accuracy >= acceptanceDataset_.threshold;
+    const QString verdict = cancelled ? QStringLiteral("已取消")
+        : !valid ? QStringLiteral("验证无效")
+        : passed ? QStringLiteral("通过") : QStringLiteral("不通过");
+    acceptanceVerdict_->setText(verdict);
+    acceptanceVerdict_->setProperty("passed", passed);
+    acceptanceVerdict_->style()->unpolish(acceptanceVerdict_);
+    acceptanceVerdict_->style()->polish(acceptanceVerdict_);
+    updateAcceptanceSummary();
+
+    QJsonObject metrics;
+    metrics.insert(QStringLiteral("reference_characters"),
+                   static_cast<double>(acceptanceReferenceCharacters_));
+    metrics.insert(QStringLiteral("hypothesis_characters"),
+                   static_cast<double>(acceptanceHypothesisCharacters_));
+    metrics.insert(QStringLiteral("edit_distance"),
+                   static_cast<double>(acceptanceEditDistance_));
+    metrics.insert(QStringLiteral("accuracy"), accuracy);
+    metrics.insert(QStringLiteral("threshold"), acceptanceDataset_.threshold);
+    metrics.insert(QStringLiteral("failed_samples"), acceptanceFailures_);
+    if (acceptanceConfidenceCount_ > 0) {
+        metrics.insert(QStringLiteral("mean_confidence"),
+                       acceptanceConfidenceTotal_ / acceptanceConfidenceCount_);
+        metrics.insert(QStringLiteral("confidence_samples"),
+                       acceptanceConfidenceCount_);
+        metrics.insert(QStringLiteral("confidence_calibrated"), false);
+    }
+    QJsonObject report;
+    report.insert(QStringLiteral("schema"),
+                  QStringLiteral("RecognitionStudio-AcceptanceReport/1"));
+    report.insert(QStringLiteral("dataset_id"), acceptanceDataset_.id);
+    report.insert(QStringLiteral("dataset_manifest"), acceptanceDataset_.manifestPath);
+    report.insert(QStringLiteral("dataset_manifest_sha256"),
+                  acceptanceDataset_.manifestSha256);
+    report.insert(QStringLiteral("task_type"),
+                  acceptanceDataset_.kind == acceptance::Kind::Scan
+                      ? QStringLiteral("scan") : QStringLiteral("voice"));
+    report.insert(QStringLiteral("completed_at"),
+                  QDateTime::currentDateTime().toString(Qt::ISODate));
+    QJsonObject runtimeEvidence;
+    runtimeEvidence.insert(QStringLiteral("application_sha256"),
+        acceptance::sha256File(QCoreApplication::applicationFilePath()));
+    runtimeEvidence.insert(QStringLiteral("voice_core_sha256"),
+        acceptance::sha256File(QDir(speechRuntimeRoot_)
+                                   .filePath(QStringLiteral("VoiceEngineCore.dll"))));
+    runtimeEvidence.insert(QStringLiteral("scan_core_sha256"),
+        acceptance::sha256File(QDir(documentRuntimeRoot_)
+                                   .filePath(QStringLiteral("ScanEngineCore.dll"))));
+    runtimeEvidence.insert(QStringLiteral("voice_runtime_status"),
+                           speechRuntimeStatus_->text());
+    runtimeEvidence.insert(QStringLiteral("scan_runtime_status"),
+                           documentRuntimeStatus_->text());
+    report.insert(QStringLiteral("runtime"), runtimeEvidence);
+    report.insert(QStringLiteral("verdict"),
+                  cancelled ? QStringLiteral("cancelled")
+                  : !valid ? QStringLiteral("invalid")
+                  : passed ? QStringLiteral("passed") : QStringLiteral("failed"));
+    report.insert(QStringLiteral("metrics"), metrics);
+    report.insert(QStringLiteral("samples"), acceptanceResults_);
+    QString writeError;
+    if (!acceptance::writeJson(
+            QDir(acceptanceRunDirectory_).filePath(QStringLiteral("report.json")),
+            report, &writeError)) {
+        statusBar()->showMessage(
+            QStringLiteral("验收结束，但报告写入失败：%1").arg(writeError));
+    } else {
+        statusBar()->showMessage(
+            QStringLiteral("验收验证结束：%1；报告已写入 %2")
+                .arg(verdict, acceptanceRunDirectory_));
+    }
+    acceptanceRunning_ = false;
+    acceptanceCancelRequested_ = false;
+    updateControls();
+}
+
 void MainWindow::pollSdkTasks() {
     drainMicrophoneAudio();
     pollSpeechStream();
@@ -730,12 +1242,26 @@ void MainWindow::pollSdkTasks() {
                 speechInterim_->setPlainText(
                     QString::fromUtf8(status.interim_text.c_str()));
             if (status.finished()) {
+                const bool acceptanceTask = acceptanceRunning_
+                    && acceptanceDataset_.kind == acceptance::Kind::Voice;
                 if (status.state == VE_TASK_DONE) {
                     const auto result = speechTask_->result();
-                    speechResult_->appendPlainText(
-                        QString::fromUtf8(result.text.c_str()));
-                    statusBar()->showMessage(QStringLiteral("音频识别完成"));
-                    speechProgress_->setValue(100);
+                    speechTask_.reset();
+                    if (acceptanceTask) {
+                        completeAcceptanceVoice(result);
+                    } else {
+                        speechResult_->appendPlainText(
+                            QString::fromUtf8(result.text.c_str()));
+                        const auto confidence = acceptance::extractVoiceConfidence(
+                            QByteArray::fromStdString(result.json));
+                        if (confidence.count > 0) {
+                            appendLog(speechResult_,
+                                      QStringLiteral("模型置信度：%1（未校准）")
+                                          .arg(percent(confidence.mean)));
+                        }
+                        statusBar()->showMessage(QStringLiteral("音频识别完成"));
+                        speechProgress_->setValue(100);
+                    }
                 } else {
                     QString failure = status.state == VE_TASK_CANCELLED
                         ? QStringLiteral("音频识别已取消")
@@ -749,17 +1275,28 @@ void MainWindow::pollSdkTasks() {
                                            .arg(QString::fromUtf8(error.what()));
                         }
                     }
-                    appendLog(speechResult_, failure);
-                    statusBar()->showMessage(failure);
                     speechTask_.reset();
+                    if (acceptanceTask) {
+                        if (acceptanceCancelRequested_)
+                            finishAcceptance(QStringLiteral("cancelled"));
+                        else
+                            failAcceptanceSample(failure);
+                    } else {
+                        appendLog(speechResult_, failure);
+                        statusBar()->showMessage(failure);
+                    }
                 }
-                speechTask_.reset();
                 speechInterim_->clear();
                 updateControls();
             }
         } catch (const std::exception& error) {
-            appendLog(speechResult_, QString::fromUtf8(error.what()));
+            const QString message = QString::fromUtf8(error.what());
             speechTask_.reset();
+            if (acceptanceRunning_
+                && acceptanceDataset_.kind == acceptance::Kind::Voice)
+                failAcceptanceSample(message);
+            else
+                appendLog(speechResult_, message);
             updateControls();
         }
     }
@@ -773,36 +1310,64 @@ void MainWindow::pollSdkTasks() {
                 statusBar()->showMessage(
                     QString::fromUtf8(status.message.c_str()));
             if (status.finished()) {
+                const bool acceptanceTask = acceptanceRunning_
+                    && acceptanceDataset_.kind == acceptance::Kind::Scan;
                 if (status.state == SE_TASK_DONE) {
                     const auto result = documentTask_->result();
-                    lastDocumentOutput_ = fromWidePath(result.output_dir);
-                    appendLog(documentResult_, QStringLiteral("识别完成"));
-                    appendLog(documentResult_,
-                              QStringLiteral("Excel：%1")
-                                  .arg(fromWidePath(result.excel_path)));
-                    appendLog(documentResult_,
-                              QStringLiteral("输出目录：%1")
-                                  .arg(lastDocumentOutput_));
-                    appendLog(documentResult_,
-                              QStringLiteral("fallback_count：%1")
-                                  .arg(result.fallback_count));
-                    documentProgress_->setValue(100);
-                    statusBar()->showMessage(QStringLiteral("纸质扫描识别完成"));
-                } else {
-                    appendLog(documentResult_,
-                              status.state == SE_TASK_CANCELLED
-                                  ? QStringLiteral("纸质扫描识别已取消")
-                                  : QStringLiteral("纸质扫描识别失败：%1")
-                                        .arg(QString::fromUtf8(
-                                            status.message.c_str())));
                     documentTask_.reset();
+                    if (acceptanceTask) {
+                        completeAcceptanceDocument(result);
+                    } else {
+                        lastDocumentOutput_ = fromWidePath(result.output_dir);
+                        appendLog(documentResult_, QStringLiteral("识别完成"));
+                        appendLog(documentResult_,
+                                  QStringLiteral("Excel：%1")
+                                      .arg(fromWidePath(result.excel_path)));
+                        appendLog(documentResult_,
+                                  QStringLiteral("输出目录：%1")
+                                      .arg(lastDocumentOutput_));
+                        appendLog(documentResult_,
+                                  QStringLiteral("中间结果：%1")
+                                      .arg(fromWidePath(result.json_path)));
+                        appendLog(documentResult_,
+                                  QStringLiteral("fallback_count：%1")
+                                      .arg(result.fallback_count));
+                        const auto confidence = acceptance::extractScanConfidence(
+                            fromWidePath(result.json_path));
+                        if (confidence.count > 0) {
+                            appendLog(documentResult_,
+                                      QStringLiteral("中间分数均值：%1（%2 项，未校准）")
+                                          .arg(percent(confidence.mean))
+                                          .arg(confidence.count));
+                        }
+                        documentProgress_->setValue(100);
+                        statusBar()->showMessage(QStringLiteral("纸质扫描识别完成"));
+                    }
+                } else {
+                    const QString failure = status.state == SE_TASK_CANCELLED
+                        ? QStringLiteral("纸质扫描识别已取消")
+                        : QStringLiteral("纸质扫描识别失败：%1")
+                              .arg(QString::fromUtf8(status.message.c_str()));
+                    documentTask_.reset();
+                    if (acceptanceTask) {
+                        if (acceptanceCancelRequested_)
+                            finishAcceptance(QStringLiteral("cancelled"));
+                        else
+                            failAcceptanceSample(failure);
+                    } else {
+                        appendLog(documentResult_, failure);
+                    }
                 }
-                documentTask_.reset();
                 updateControls();
             }
         } catch (const std::exception& error) {
-            appendLog(documentResult_, QString::fromUtf8(error.what()));
+            const QString message = QString::fromUtf8(error.what());
             documentTask_.reset();
+            if (acceptanceRunning_
+                && acceptanceDataset_.kind == acceptance::Kind::Scan)
+                failAcceptanceSample(message);
+            else
+                appendLog(documentResult_, message);
             updateControls();
         }
     }

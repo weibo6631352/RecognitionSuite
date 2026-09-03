@@ -319,6 +319,7 @@ public:
         std::string out;
         double probabilityLogSum = 0.0;
         std::size_t probabilityCount = 0;
+        bool transcriptionStarted = false;
         if (confidence) {
             confidence->probability = 0.0;
             confidence->tokens.clear();
@@ -355,11 +356,28 @@ public:
             }
             const std::string piece = token_to_string(vocab_, id);
             out += piece;
-            if (probability > 0.0) {
+            if (piece.find("<asr_text>") != std::string::npos) {
+                transcriptionStarted = true;
+                if (interim)
+                    *interim = out;
+                llama_batch batch = llama_batch_get_one(
+                    const_cast<llama_token*>(&id), 1);
+                if (llama_decode(lctx_, batch) != 0) {
+                    llama_sampler_free(smpl);
+                    if (err)
+                        *err = "llama_decode failed during generation";
+                    return false;
+                }
+                n_past += 1;
+                continue;
+            }
+            const bool transcriptionToken = transcriptionStarted
+                && piece.find("</asr_text>") == std::string::npos;
+            if (transcriptionToken && probability > 0.0) {
                 probabilityLogSum += std::log(probability);
                 ++probabilityCount;
             }
-            if (confidence)
+            if (confidence && transcriptionToken)
                 confidence->tokens.push_back({piece, probability});
             if (interim) {
                 *interim = out;
