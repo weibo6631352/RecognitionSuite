@@ -39,7 +39,9 @@ cmake --build --preset windows-msvc-qt5
 build\windows-msvc-qt5\bin\RecognitionStudio.exe --sdk-check
 ```
 
-`--sdk-check` 返回 0 表示两套 SDK 的 GPU 运行时均可初始化；它不代表 98% 准确率验收已经通过。
+`--sdk-check` 返回 0 表示检测到 RTX 40 (`sm_89`) 或 RTX 50
+(`sm_120`) 设备，并且两套 SDK 的 GPU 运行时均可初始化；它不加载完整模型，
+也不代表 98% 准确率或高显存压力输入已经验收通过。
 
 主程序：
 

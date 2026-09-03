@@ -43,6 +43,17 @@ QString fromWidePath(const std::wstring& path) {
                                    static_cast<int>(path.size()));
 }
 
+bool isSupportedGpuArchitecture(const voiceengine::CudaInfo& info) noexcept {
+    return (info.compute_major == 8 && info.compute_minor == 9)
+        || (info.compute_major == 12 && info.compute_minor == 0);
+}
+
+QString cudaArchitecture(const voiceengine::CudaInfo& info) {
+    return QStringLiteral("sm_%1%2")
+        .arg(info.compute_major)
+        .arg(info.compute_minor);
+}
+
 QFrame* makeRuntimeCard(const QString& name, QLabel** status,
                         QWidget* parent) {
     auto* card = new QFrame(parent);
@@ -292,19 +303,31 @@ QString MainWindow::componentRoot(const QString& name) const {
 void MainWindow::initializeSdks() {
     speechRuntimeRoot_ = componentRoot(QStringLiteral("voiceengine"));
     documentRuntimeRoot_ = componentRoot(QStringLiteral("scanengine"));
+    bool gpuArchitectureKnown = false;
+    bool gpuArchitectureSupported = false;
 
     try {
         auto context = voiceengine::Context::open(toWidePath(speechRuntimeRoot_));
         const auto info = context.cuda_info();
-        speechReady_ = info.available;
+        gpuArchitectureKnown = info.available;
+        gpuArchitectureSupported = info.available
+            && isSupportedGpuArchitecture(info);
+        speechReady_ = gpuArchitectureSupported;
         if (speechReady_) {
             speechContext_ = std::make_unique<voiceengine::Context>(
                 std::move(context));
             setRuntimeStatus(
                 speechRuntimeStatus_, true,
-                QStringLiteral("就绪 · %1 · %2 MiB")
+                QStringLiteral("就绪 · %1 · %2 · %3 MiB")
                     .arg(QString::fromUtf8(info.name.c_str()))
+                    .arg(cudaArchitecture(info))
                     .arg(info.vram_mib));
+        } else if (info.available) {
+            setRuntimeStatus(
+                speechRuntimeStatus_, false,
+                QStringLiteral("不支持 · %1 · %2；需要 RTX 40 (sm_89) 或 RTX 50 (sm_120)")
+                    .arg(QString::fromUtf8(info.name.c_str()))
+                    .arg(cudaArchitecture(info)));
         } else {
             setRuntimeStatus(speechRuntimeStatus_, false,
                              QStringLiteral("CUDA GPU 不可用"));
@@ -318,7 +341,8 @@ void MainWindow::initializeSdks() {
     try {
         auto context = scanengine::Context::open(toWidePath(documentRuntimeRoot_));
         const auto info = context.runtime_info();
-        documentReady_ = info.gpu_available;
+        documentReady_ = info.gpu_available
+            && (!gpuArchitectureKnown || gpuArchitectureSupported);
         if (documentReady_) {
             documentContext_ = std::make_unique<scanengine::Context>(
                 std::move(context));
@@ -326,6 +350,10 @@ void MainWindow::initializeSdks() {
                 documentRuntimeStatus_, true,
                 QStringLiteral("就绪 · %1")
                     .arg(QString::fromUtf8(info.backend.c_str())));
+        } else if (info.gpu_available && gpuArchitectureKnown) {
+            setRuntimeStatus(
+                documentRuntimeStatus_, false,
+                QStringLiteral("GPU 架构不受支持；需要 RTX 40 (sm_89) 或 RTX 50 (sm_120)"));
         } else {
             setRuntimeStatus(documentRuntimeStatus_, false,
                              QStringLiteral("GPU 后端不可用"));

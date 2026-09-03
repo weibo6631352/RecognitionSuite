@@ -53,11 +53,16 @@ git status --short -- sdk
 ```powershell
 .\scripts\status.ps1
 .\scripts\verify-artifacts.ps1
-# 发布前可执行较慢的全量 SDK 哈希校验：
-.\scripts\verify-artifacts.ps1 -VerifySdkHashes
+# 发布前执行较慢的全量 SDK 哈希与 RTX 40/50 二进制架构校验：
+.\scripts\verify-artifacts.ps1 -VerifySdkHashes -VerifyCudaArchitectures
 ```
 
-详细的仓库边界、交付物选择和发布规则见 [`docs/REPOSITORY_AND_RELEASE.md`](docs/REPOSITORY_AND_RELEASE.md)。
+两套 SDK 的 Core DLL 必须同时携带 RTX 40 (`sm_89`) 与 RTX 50
+(`sm_120a`) 原生 CUDA 代码；最终程序启动时也会拒绝其他计算能力。
+硬件验证矩阵及尚未关闭的显存边界见
+[`docs/GPU_COMPATIBILITY.md`](docs/GPU_COMPATIBILITY.md)。详细的仓库边界、
+交付物选择和发布规则见
+[`docs/REPOSITORY_AND_RELEASE.md`](docs/REPOSITORY_AND_RELEASE.md)。
 
 ## 目录约定
 

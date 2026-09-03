@@ -1,17 +1,31 @@
 {
-    "schema_version":  1,
+    "schema_version":  2,
     "engine":  "VoiceEngine",
     "engine_version":  "0.1.0",
     "sdk_api_version":  1,
     "platform":  "windows-x64",
-    "source_commit":  "5de4416e59bae27f997436a3f9c5517ee801e5cd",
-    "source_tree":  "85ca429729f7873f5f2e65e8891338aed1025758",
+    "source_commit":  "9a863795abd06594d8324a55737c384e92f3ce2b",
+    "source_tree":  "0b54fefcc3e9b54266588d988d43e50a1c1a1bc9",
     "build_preset":  "win-qt5.12.9-msvc-cuda",
     "payload_format":  "expanded-directory",
     "model_packaging":  "gguf-part1-part2; materialize before distribution",
-    "payload_file_count":  40,
-    "payload_bytes":  5671767988,
+    "cuda_toolkit_version":  "12.9.41",
+    "minimum_nvidia_driver_windows":  "576.02",
+    "gpu_families":  [
+                         "NVIDIA GeForce RTX 40",
+                         "NVIDIA GeForce RTX 50"
+                     ],
+    "cuda_native_architectures":  [
+                                      "sm_89",
+                                      "sm_120a"
+                                  ],
+    "cuda_ptx_architectures":  [
+                                   "sm_89",
+                                   "sm_120a"
+                               ],
+    "payload_file_count":  41,
+    "payload_bytes":  5671961153,
     "checksums_file":  "SHA256SUMS.txt",
-    "checksums_sha256":  "0b09cb32936a9af2b3a79259498a7a00ccbf849d240d41aa9432f80098fb04bb",
+    "checksums_sha256":  "1c4f14a4c5aa86fa87fc004530792f5afeae6518fa34a5ed9d7b9cc54b98747f",
     "generated_by":  "scripts/publish-sdks.ps1"
 }

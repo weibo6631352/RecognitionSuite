@@ -23,6 +23,7 @@ add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:/utf-8>")
 
 set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
 set(CMAKE_INSTALL_UCRT_LIBRARIES FALSE)
+set(CMAKE_INSTALL_OPENMP_LIBRARIES TRUE)
 include(InstallRequiredSystemLibraries)
 if(NOT CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
     message(FATAL_ERROR "Cannot locate the MSVC runtime deployment files")

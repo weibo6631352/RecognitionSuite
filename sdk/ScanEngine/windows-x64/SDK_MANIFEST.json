@@ -1,14 +1,28 @@
 {
-    "schema_version":  1,
+    "schema_version":  2,
     "engine":  "ScanEngine",
     "engine_version":  "0.1.0",
     "sdk_api_version":  1,
     "platform":  "windows-x64",
-    "source_commit":  "5de4416e59bae27f997436a3f9c5517ee801e5cd",
-    "source_tree":  "d3bbe8d986b360381563027fea33c914dabe8d2e",
+    "source_commit":  "9a863795abd06594d8324a55737c384e92f3ce2b",
+    "source_tree":  "5a760b5e11ab8a11ed13dc8e0a1048ecbcbd0114",
     "build_preset":  "win-qt5.12.9-msvc-mlx-cuda",
     "payload_format":  "expanded-directory",
     "model_packaging":  "native-safetensors-parts",
+    "cuda_toolkit_version":  "12.9.41",
+    "minimum_nvidia_driver_windows":  "576.02",
+    "gpu_families":  [
+                         "NVIDIA GeForce RTX 40",
+                         "NVIDIA GeForce RTX 50"
+                     ],
+    "cuda_native_architectures":  [
+                                      "sm_89",
+                                      "sm_120a"
+                                  ],
+    "cuda_ptx_architectures":  [
+                                   "sm_89",
+                                   "sm_120"
+                               ],
     "payload_file_count":  3843,
     "payload_bytes":  4629508532,
     "checksums_file":  "SHA256SUMS.txt",

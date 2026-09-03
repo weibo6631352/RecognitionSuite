@@ -65,7 +65,8 @@ function Write-SdkManifest {
         [Parameter(Mandatory)] [string]$BuildPreset,
         [Parameter(Mandatory)] [string]$SourceCommit,
         [Parameter(Mandatory)] [string]$SourceTree,
-        [Parameter(Mandatory)] [string]$ModelPackaging
+        [Parameter(Mandatory)] [string]$ModelPackaging,
+        [Parameter(Mandatory)] [string[]]$CudaPtxArchitectures
     )
 
     $checksumsPath = Join-Path $SdkRoot 'SHA256SUMS.txt'
@@ -87,7 +88,7 @@ function Write-SdkManifest {
     $checksumsHash = (Get-FileHash -LiteralPath $checksumsPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
     $manifest = [ordered]@{
-        schema_version = 1
+        schema_version = 2
         engine = $Engine
         engine_version = '0.1.0'
         sdk_api_version = 1
@@ -97,6 +98,11 @@ function Write-SdkManifest {
         build_preset = $BuildPreset
         payload_format = 'expanded-directory'
         model_packaging = $ModelPackaging
+        cuda_toolkit_version = '12.9.41'
+        minimum_nvidia_driver_windows = '576.02'
+        gpu_families = @('NVIDIA GeForce RTX 40', 'NVIDIA GeForce RTX 50')
+        cuda_native_architectures = @('sm_89', 'sm_120a')
+        cuda_ptx_architectures = $CudaPtxArchitectures
         payload_file_count = $payloadFiles.Count
         payload_bytes = $payloadBytes
         checksums_file = 'SHA256SUMS.txt'
@@ -138,6 +144,7 @@ function Assert-SdkLayout {
             'bin/models/qwen3-asr-1.7b/mmproj-Qwen3-ASR-1.7B-bf16.gguf',
             'bin/runtimes/cuda',
             'bin/runtimes/ffmpeg',
+            'bin/vcomp140.dll',
             'tools/materialize-voice-model.ps1'
         )
     }
@@ -276,6 +283,7 @@ $sdkSpecs = @(
         Source = Join-Path $suiteRoot 'engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk'
         Preset = 'win-qt5.12.9-msvc-mlx-cuda'
         ModelPackaging = 'native-safetensors-parts'
+        CudaPtxArchitectures = @('sm_89', 'sm_120')
     },
     [ordered]@{
         Name = 'VoiceEngine'
@@ -284,6 +292,7 @@ $sdkSpecs = @(
         Source = Join-Path $suiteRoot 'engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk'
         Preset = 'win-qt5.12.9-msvc-cuda'
         ModelPackaging = 'gguf-part1-part2; materialize before distribution'
+        CudaPtxArchitectures = @('sm_89', 'sm_120a')
     }
 )
 
@@ -356,10 +365,15 @@ foreach ($spec in $sdkSpecs) {
         -BuildPreset $spec.Preset `
         -SourceCommit $sourceCommit `
         -SourceTree $spec.SourceTree `
-        -ModelPackaging $spec.ModelPackaging
+        -ModelPackaging $spec.ModelPackaging `
+        -CudaPtxArchitectures $spec.CudaPtxArchitectures
     Assert-SdkLayout -SdkRoot $stageSdk -Engine $spec.Name
     Assert-SdkManifest -SdkRoot $stageSdk -VerifyHashes
 }
+
+& (Join-Path $PSScriptRoot 'verify-cuda-architectures.ps1') `
+    -ScanCorePath (Join-Path $stagingRoot 'ScanEngine/bin/ScanEngineCore.dll') `
+    -VoiceCorePath (Join-Path $stagingRoot 'VoiceEngine/bin/VoiceEngineCore.dll')
 
 New-Item -ItemType Directory -Path $publishedRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null

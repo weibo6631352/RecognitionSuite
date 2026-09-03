@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [switch]$VerifySdkHashes,
+    [switch]$VerifyCudaArchitectures,
     [switch]$SdkOnly,
     [switch]$SkipSdkGitTracking
 )
@@ -58,6 +59,20 @@ function Verify-SdkManifest {
     if ($manifest.source_commit -notmatch '^[0-9a-fA-F]{40,64}$' -or
         $manifest.source_tree -notmatch '^[0-9a-fA-F]{40,64}$') {
         $failures.Add("SDK manifest has no valid source commit/tree identity: $manifestPath")
+    }
+    if ([int]$manifest.schema_version -lt 2 -or
+        $manifest.cuda_toolkit_version -ne '12.9.41' -or
+        $manifest.minimum_nvidia_driver_windows -ne '576.02') {
+        $failures.Add("SDK manifest has no valid CUDA 12.9 compatibility identity: $manifestPath")
+    }
+    $nativeArchitectures = @($manifest.cuda_native_architectures)
+    if ('sm_89' -notin $nativeArchitectures -or 'sm_120a' -notin $nativeArchitectures) {
+        $failures.Add("SDK manifest does not declare RTX 40/50 native CUDA targets: $manifestPath")
+    }
+    $ptxArchitectures = @($manifest.cuda_ptx_architectures)
+    if ('sm_89' -notin $ptxArchitectures -or
+        (@('sm_120', 'sm_120a') | Where-Object { $_ -in $ptxArchitectures }).Count -eq 0) {
+        $failures.Add("SDK manifest does not declare RTX 40/50 PTX targets: $manifestPath")
     }
 
     $actualChecksumsHash = (Get-FileHash -LiteralPath $checksumsPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -208,6 +223,7 @@ $voiceSdkPaths = @(
     'bin/models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf.part1',
     'bin/models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf.part2',
     'bin/models/qwen3-asr-1.7b/mmproj-Qwen3-ASR-1.7B-bf16.gguf',
+    'bin/vcomp140.dll',
     'tools/materialize-voice-model.ps1',
     'SDK_MANIFEST.json', 'SHA256SUMS.txt'
 )
@@ -218,6 +234,17 @@ Require-MatchingFile -Root (Join-Path $voiceSdk 'bin/runtimes/ffmpeg') -Filter '
 
 Verify-SdkManifest -Root $scanSdk
 Verify-SdkManifest -Root $voiceSdk
+
+if ($VerifyCudaArchitectures) {
+    try {
+        & (Join-Path $PSScriptRoot 'verify-cuda-architectures.ps1') `
+            -ScanCorePath (Join-Path $scanSdk 'bin/ScanEngineCore.dll') `
+            -VoiceCorePath (Join-Path $voiceSdk 'bin/VoiceEngineCore.dll')
+    }
+    catch {
+        $failures.Add("CUDA architecture verification failed: $($_.Exception.Message)")
+    }
+}
 
 if ($SdkOnly) {
     if ($failures.Count -gt 0) {
@@ -234,6 +261,7 @@ $studioPaths = @(
     'components/scanengine/include/cccl',
     'components/scanengine/include/cuda',
     'components/voiceengine/VoiceEngineCore.dll',
+    'components/voiceengine/vcomp140.dll',
     'components/voiceengine/models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf',
     'licenses/scanengine', 'licenses/voiceengine', 'output'
 )

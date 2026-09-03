@@ -131,7 +131,7 @@ No transcript is prefilled into the model, which avoids turning recognition
 into autoregressive text continuation. There is no fixed limit on the duration
 of the microphone session.
 
-The shipped RTX 5090 profile keeps all model layers on CUDA, uses an 8192-token
+The shipped RTX 40/50 profile keeps all model layers on CUDA, uses an 8192-token
 context with 2048/512 logical and physical batches, and allows up to 384 newly
 generated tokens per rolled window. A 45-second audio window occupies only a
 small part of that context, so increasing the context or batches would mainly
@@ -210,7 +210,7 @@ not an utterance or session-duration limit; hosts must retain and retry the
 same capture block rather than silently discard it.
 The 120-second threshold is intentionally not sized to GPU memory: enlarging it
 does not improve recognition, and would only let a stalled decoder hide more
-audio and increase recovery latency. On an RTX 5090 the normal queue should stay
+audio and increase recovery latency. On a validated RTX 40/50 GPU the normal queue should stay
 near empty; the threshold remains a last-resort loss-prevention guard.
 The host should keep capture blocks short (typically 20-100 ms), avoid unloading
 the model while a stream exists, destroy every stream before destroying its

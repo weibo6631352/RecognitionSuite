@@ -11,9 +11,10 @@
 | cuDNN | 9.9.0.52，装在 CUDA 根目录 |
 | CMake | ≥ 3.25（本机常用 3.30.5） |
 | MLX | `third_party/windows-x64/mlx/lib/mlx.lib`，不再编译源码 |
-| 目标卡 | RTX 5090，`120a-real;120-virtual` |
+| 目标卡 | RTX 40 (`89-real;89-virtual`) 与 RTX 50 (`120a-real;120-virtual`) |
 
-换机仍是同一套：Windows x64 + 9950 + 5090 + CUDA 12.9。
+换机仍是同一套 Windows x64 工具链。运行机使用 RTX 40/50 系列 GPU，
+NVIDIA Windows 驱动至少为 576.02；运行包自带 CUDA 12.9 运行库。
 
 开发机装工具链：双击 `script\windows\开始.bat`，先「下载离线包」再「离线安装」。离线包在 `script\windows\offline\`，可整目录拷走。
 

@@ -33,7 +33,7 @@ Git 合并不等于源码耦合。两个引擎继续生成独立 SDK，宿主继
 - `sdk/ScanEngine/windows-x64/`
 - `sdk/VoiceEngine/windows-x64/`
 
-SDK 包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/`、`licenses/`、`SDK_MANIFEST.json` 和 `SHA256SUMS.txt`。它们是经验证、由 Git/LFS 跟踪的应用输入，不应整体复制给最终用户。
+SDK 包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/`、`licenses/`、`SDK_MANIFEST.json` 和 `SHA256SUMS.txt`。清单记录 CUDA 12.9、Windows 驱动下限以及 RTX 40/50 的原生代码和 PTX 目标。它们是经验证、由 Git/LFS 跟踪的应用输入，不应整体复制给最终用户。
 
 VoiceEngine 的完整主 GGUF 超过远端单文件限制，因此 SDK 基线保存两个已校验分片。完整 GGUF 不允许写入根 SDK；Studio 只在自己的忽略构建输出中原子拼接并校验它，最终运行包只保留完整 GGUF。
 
@@ -56,4 +56,13 @@ VoiceEngine 的完整主 GGUF 超过远端单文件限制，因此 SDK 基线保
 .\scripts\verify-artifacts.ps1
 ```
 
-该检查验证已提交 SDK 基线和最终运行包的必要文件、清单、私有 CUDA/FFmpeg 目录、模型、许可证及旧产品名残留。发布前使用 `-VerifySdkHashes` 做全量校验。准确率 98% 不属于目录检查，需要冻结测试集、真值和统一计分规则另行出具报告。
+该检查验证已提交 SDK 基线和最终运行包的必要文件、清单、私有 CUDA/FFmpeg 目录、模型、许可证及旧产品名残留。发布前执行：
+
+```powershell
+.\scripts\verify-artifacts.ps1 -VerifySdkHashes -VerifyCudaArchitectures
+```
+
+其中架构检查使用 CUDA 12.9 的 `cuobjdump`，强制两颗 Core DLL 同时包含
+RTX 40 (`sm_89`) 与 RTX 50 (`sm_120a`) 原生代码及对应 PTX。准确率 98%
+和 40/50 真机推理验收不属于目录检查，需要冻结测试集、真值和统一计分规则
+另行出具报告。
