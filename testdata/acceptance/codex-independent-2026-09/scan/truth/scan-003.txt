@@ -1,0 +1,7 @@
+软件发布核对单
+版本：RecognitionStudio 2.4.0
+平台：Windows x64
+图形设备：NVIDIA RTX 4060
+扫描模块：READY
+语音模块：READY
+验收阈值：98%

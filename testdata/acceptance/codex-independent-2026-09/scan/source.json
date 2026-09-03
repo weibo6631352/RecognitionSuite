@@ -1,0 +1,19 @@
+{
+  "schema": "RecognitionStudio-IndependentSource/1",
+  "created_by": "OpenAI Codex",
+  "created_on": "2026-09-03",
+  "labeling": "truth-before-render",
+  "recognition_output_used_for_labels": false,
+  "renderer": "Windows System.Drawing",
+  "canvas": "1600x1200",
+  "samples": [
+    { "id": "scan-001", "font": "Microsoft YaHei", "font_size_px": 43, "background": "#FFFFFF" },
+    { "id": "scan-002", "font": "SimSun", "font_size_px": 45, "background": "#FAFAF7" },
+    { "id": "scan-003", "font": "Microsoft YaHei", "font_size_px": 39, "background": "#FFFFFF" },
+    { "id": "scan-004", "font": "SimSun", "font_size_px": 40, "background": "#F8F5ED", "noise_seed": 20260903 },
+    { "id": "scan-005", "font": "Microsoft YaHei", "font_size_px": 42, "foreground": "#555555", "background": "#EEEEEA", "noise_seed": 980001 },
+    { "id": "scan-006", "font": "SimSun", "font_size_px": 41, "rotate_clockwise": 90 },
+    { "id": "scan-007", "font": "Microsoft YaHei", "font_size_px": 42, "background": "#FFFFFF", "noise_seed": 20260007 },
+    { "id": "scan-008", "font": "SimSun", "font_size_px": 38, "background": "#F5F5F5" }
+  ]
+}

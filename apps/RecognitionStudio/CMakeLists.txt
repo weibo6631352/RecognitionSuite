@@ -76,6 +76,8 @@ if(BUILD_TESTING)
         src/acceptance_validation.cpp
         src/acceptance_validation.h)
     target_include_directories(RecognitionStudioAcceptanceTests PRIVATE src)
+    target_compile_definitions(RecognitionStudioAcceptanceTests PRIVATE
+        RECOGNITION_SUITE_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../..")
     target_link_libraries(RecognitionStudioAcceptanceTests PRIVATE
         Qt5::Core Qt5::Gui)
     set_target_properties(RecognitionStudioAcceptanceTests PROPERTIES

@@ -1,0 +1,19 @@
+{
+  "schema": "RecognitionStudio-IndependentSource/1",
+  "created_by": "OpenAI Codex",
+  "created_on": "2026-09-03",
+  "labeling": "truth-before-synthesis",
+  "recognition_output_used_for_labels": false,
+  "synthesizer": "Windows System.Speech.Synthesis",
+  "volume": 92,
+  "samples": [
+    { "id": "voice-001", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": -1 },
+    { "id": "voice-002", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": 0 },
+    { "id": "voice-003", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": 1 },
+    { "id": "voice-004", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": -2 },
+    { "id": "voice-005", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": 2 },
+    { "id": "voice-006", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": 0 },
+    { "id": "voice-007", "voice": "Microsoft Zira Desktop", "culture": "en-US", "rate": 0 },
+    { "id": "voice-008", "voice": "Microsoft Huihui Desktop", "culture": "zh-CN", "rate": 1 }
+  ]
+}

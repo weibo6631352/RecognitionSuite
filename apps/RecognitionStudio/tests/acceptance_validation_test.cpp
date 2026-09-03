@@ -104,5 +104,23 @@ int main(int argc, char** argv) {
         || !require(confidence.mean > 0.899 && confidence.mean < 0.901,
                     "voice confidence mean failed"))
         return 1;
+
+    const QDir repository(QStringLiteral(RECOGNITION_SUITE_SOURCE_DIR));
+    const QString frozenRoot = repository.filePath(
+        QStringLiteral("testdata/acceptance/codex-independent-2026-09"));
+    const QStringList frozenManifests = {
+        QDir(frozenRoot).filePath(QStringLiteral("scan/manifest.json")),
+        QDir(frozenRoot).filePath(QStringLiteral("voice/manifest.json"))};
+    for (const QString& frozenManifest : frozenManifests) {
+        Dataset frozen;
+        if (!require(loadDataset(frozenManifest, &frozen, &error),
+                     qPrintable(QStringLiteral("frozen manifest failed: %1 (%2)")
+                                    .arg(frozenManifest, error)))
+            || !require(frozen.samples.size() == 8,
+                        "frozen manifest sample count failed")
+            || !require(frozen.threshold == 0.98,
+                        "frozen manifest threshold failed"))
+            return 1;
+    }
     return 0;
 }

@@ -1,0 +1,73 @@
+{
+  "schema": "RecognitionStudio-Acceptance/1",
+  "dataset_id": "CODEX-VOICE-INDEPENDENT-2026-09-V1",
+  "task_type": "voice",
+  "threshold": 0.98,
+  "dataset_class": "independent_technical_acceptance",
+  "created_by": "OpenAI Codex",
+  "created_on": "2026-09-03",
+  "recognition_output_used_for_labels": false,
+  "normalization": {
+    "remove_whitespace": true,
+    "ignore_punctuation": true,
+    "case_sensitive": false
+  },
+  "samples": [
+    {
+      "id": "voice-001",
+      "input": "input/voice-001.wav",
+      "input_sha256": "19c0d377c5dfd684704c68a41b5487be6390e3c84883f4de4acdc9856c5b4b73",
+      "reference_path": "truth/voice-001.txt",
+      "reference_sha256": "2454d71b3f7d4303447779a6f47d1baebf80a0a9893038c12495db78db9a441f"
+    },
+    {
+      "id": "voice-002",
+      "input": "input/voice-002.wav",
+      "input_sha256": "d92b098e9c29a7003863ba2a15bc06244810615e37fb11be12f46b22845f9f11",
+      "reference_path": "truth/voice-002.txt",
+      "reference_sha256": "df8b9945433d3cae83ccfae3aeea4f4ad59d6db987f888d9efe1fdf86e684836"
+    },
+    {
+      "id": "voice-003",
+      "input": "input/voice-003.wav",
+      "input_sha256": "59f8f90a60543c0c1dc2527af6d67d50dee080ffbb05da6f2826c41c682ee09a",
+      "reference_path": "truth/voice-003.txt",
+      "reference_sha256": "5ce39859bc4302ef6535188fe07154722b9cc34e9e45964f6da0b862d080048b"
+    },
+    {
+      "id": "voice-004",
+      "input": "input/voice-004.wav",
+      "input_sha256": "9d88a73b0a98001efec0be66737a21abd7c2a23c7ed85a2cd2e67da835a3e200",
+      "reference_path": "truth/voice-004.txt",
+      "reference_sha256": "fdf0f21cd60194f1be96528e82cf0a5647715093c65671ce6b24994fb7162728"
+    },
+    {
+      "id": "voice-005",
+      "input": "input/voice-005.wav",
+      "input_sha256": "c1cc31dc1b91193051fed916897a71201e6be342415fd4a94837736230e4e51c",
+      "reference_path": "truth/voice-005.txt",
+      "reference_sha256": "1d9cc63b37c83075f516e9c9b305ab7a435d9f0edb97739f2782b6c211d2d507"
+    },
+    {
+      "id": "voice-006",
+      "input": "input/voice-006.wav",
+      "input_sha256": "3fcc4e03433c0f8cc9df1a36bfe5ac55917016bc9443066423ad7377fe019c78",
+      "reference_path": "truth/voice-006.txt",
+      "reference_sha256": "0672e80901fbf9419f8467aa78ad29c98bb2c22c5ba481e457ae013a80cebdef"
+    },
+    {
+      "id": "voice-007",
+      "input": "input/voice-007.wav",
+      "input_sha256": "c572ae72deba425096463e5d37ca36d2187c8d21b7a05a2a6bf2b43144a826d4",
+      "reference_path": "truth/voice-007.txt",
+      "reference_sha256": "ba2a140a2334b9975b2729996e2cef59c6ea40e98fd390171a68f6c5a1eb9ac8"
+    },
+    {
+      "id": "voice-008",
+      "input": "input/voice-008.wav",
+      "input_sha256": "156185598d6f0125e20704c6dbd80601ca5bddf1f7364a4e90c9f4fa90843077",
+      "reference_path": "truth/voice-008.txt",
+      "reference_sha256": "8eb240f571ff6cada40b78996fc0ae5bd1c877d9582f77d0250452efe67b0772"
+    }
+  ]
+}

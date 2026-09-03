@@ -14,6 +14,7 @@
 /testdata/**/*.webp filter=lfs diff=lfs merge=lfs -text
 /testdata/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
 /testdata/**/*.wav filter=lfs diff=lfs merge=lfs -text
+/testdata/acceptance/**/*.txt text eol=lf
 
 # Reviewed SDK baselines are versioned deliverables. Keep their large binary
 # payloads in LFS while leaving headers, CMake files, docs, and manifests as

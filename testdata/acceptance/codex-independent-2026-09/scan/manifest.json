@@ -1,0 +1,73 @@
+{
+  "schema": "RecognitionStudio-Acceptance/1",
+  "dataset_id": "CODEX-SCAN-INDEPENDENT-2026-09-V1",
+  "task_type": "scan",
+  "threshold": 0.98,
+  "dataset_class": "independent_technical_acceptance",
+  "created_by": "OpenAI Codex",
+  "created_on": "2026-09-03",
+  "recognition_output_used_for_labels": false,
+  "normalization": {
+    "remove_whitespace": true,
+    "ignore_punctuation": false,
+    "case_sensitive": true
+  },
+  "samples": [
+    {
+      "id": "scan-001",
+      "input": "input/scan-001.png",
+      "input_sha256": "7fd81892f74806c82ed6aa62a92f88cc1c64dfb2b8e389e5494d353bd9c84754",
+      "reference_path": "truth/scan-001.txt",
+      "reference_sha256": "87809169642b4e6a2b55bc95fc57b07ff548ace6b41523ad405fbf5fd94f5b22"
+    },
+    {
+      "id": "scan-002",
+      "input": "input/scan-002.png",
+      "input_sha256": "4159139ac837f1f0d4c7c20c95ada47751fb2ede942d5e7839bbdb3e698cd1a1",
+      "reference_path": "truth/scan-002.txt",
+      "reference_sha256": "8f9f405b0ebd4ca1937f41393fbbe9314fc53f7818131dfc2d889243305bade7"
+    },
+    {
+      "id": "scan-003",
+      "input": "input/scan-003.png",
+      "input_sha256": "4d2e29bd030565b47ed93631e29f2e1365649be0b4e773b15316dcb6add4e23b",
+      "reference_path": "truth/scan-003.txt",
+      "reference_sha256": "0265a30a20ea7da9ab7e6987274761cce14714a93006b2af70c70bb0496a7620"
+    },
+    {
+      "id": "scan-004",
+      "input": "input/scan-004.png",
+      "input_sha256": "6cedafe25b6a5d008fbe02d4683f0a244071e36ddaad75c1314c8a7dc5e99bc4",
+      "reference_path": "truth/scan-004.txt",
+      "reference_sha256": "ca3424b1eabd8025ccb0b6f048804a609518a3f788d2a2d78325678676815bc2"
+    },
+    {
+      "id": "scan-005",
+      "input": "input/scan-005.png",
+      "input_sha256": "7f1e558fea9dc8d8fe3a32a944ff79c40e7488384613fb2d65a5d4b63dcd390e",
+      "reference_path": "truth/scan-005.txt",
+      "reference_sha256": "76046a2798546fd3bdcc29da3c374e999785b15dd9c7f115a62017322a3e88cb"
+    },
+    {
+      "id": "scan-006",
+      "input": "input/scan-006.png",
+      "input_sha256": "2f6c7fbe5cfe21f53cc2ed8d13458ed0238b2172f9af0bf7ff3dafadabd2b40d",
+      "reference_path": "truth/scan-006.txt",
+      "reference_sha256": "2d5792e95dec6385118b4279d1645c2e8163e3582bc2aba881cf435809e6b6ac"
+    },
+    {
+      "id": "scan-007",
+      "input": "input/scan-007.png",
+      "input_sha256": "fb9ffce54790d6fae97916bc085e8b72006a238076e2844f881e07ef452b6afd",
+      "reference_path": "truth/scan-007.txt",
+      "reference_sha256": "53f5a50815f59ef9063e69c523968802d682f41d38860d94eecaa4153e40fe38"
+    },
+    {
+      "id": "scan-008",
+      "input": "input/scan-008.png",
+      "input_sha256": "716a7f2faabdc1052b560ac6b88ae0fa395aac270d43e9f13abcec97fcbf87df",
+      "reference_path": "truth/scan-008.txt",
+      "reference_sha256": "e796eb4c974fcfc1112a25997f895daf0af5f8ff708c22a0440c4875933cfea8"
+    }
+  ]
+}
