@@ -15,3 +15,28 @@ foreach ($component in @('apps/RecognitionStudio', 'engines/ScanEngine', 'engine
     $count = @(& git -C $suiteRoot status --short -- $component).Count
     Write-Output ("  {0,-26} {1,4} changed paths" -f $component, $count)
 }
+
+Write-Output ''
+Write-Output '[published SDKs]'
+foreach ($sdk in @(
+    @{ Name = 'ScanEngine'; Path = 'sdk/ScanEngine/windows-x64'; Config = 'cmake/ScanEngineConfig.cmake' },
+    @{ Name = 'VoiceEngine'; Path = 'sdk/VoiceEngine/windows-x64'; Config = 'cmake/VoiceEngineConfig.cmake' }
+)) {
+    $sdkRoot = Join-Path $suiteRoot $sdk.Path
+    $manifestPath = Join-Path $sdkRoot 'SDK_MANIFEST.json'
+    $present = (Test-Path -LiteralPath (Join-Path $sdkRoot $sdk.Config)) -and
+        (Test-Path -LiteralPath $manifestPath)
+    $state = 'missing'
+    if ($present) {
+        try {
+            $manifest = Get-Content -LiteralPath $manifestPath -Encoding UTF8 -Raw | ConvertFrom-Json
+            $trackedCount = @(& git -C $suiteRoot ls-files -- $sdk.Path).Count
+            $expectedTrackedCount = [int]$manifest.payload_file_count + 2
+            $state = if ($trackedCount -eq $expectedTrackedCount) { 'ready' } else { 'present, not fully tracked' }
+        }
+        catch {
+            $state = 'invalid manifest'
+        }
+    }
+    Write-Output ("  {0,-26} {1}" -f $sdk.Name, $state)
+}

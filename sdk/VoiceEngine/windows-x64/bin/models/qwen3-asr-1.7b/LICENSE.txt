@@ -1,0 +1,3 @@
+Qwen3-ASR-1.7B is released by Qwen / Alibaba under the Apache License 2.0.
+GGUF conversion is published by ggml-org on Hugging Face.
+See https://huggingface.co/Qwen/Qwen3-ASR-1.7B and Apache-2.0.

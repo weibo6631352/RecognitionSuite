@@ -1,0 +1,29 @@
+if(TARGET VoiceEngine::SDK)
+    return()
+endif()
+
+get_filename_component(_voiceengine_sdk_root
+    "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+
+add_library(VoiceEngine::Core SHARED IMPORTED)
+set_target_properties(VoiceEngine::Core PROPERTIES
+    IMPORTED_LOCATION "${_voiceengine_sdk_root}/bin/VoiceEngineCore.dll"
+    IMPORTED_IMPLIB "${_voiceengine_sdk_root}/lib/VoiceEngineCore.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${_voiceengine_sdk_root}/include")
+
+add_library(VoiceEngine::Runtime STATIC IMPORTED)
+set_target_properties(VoiceEngine::Runtime PROPERTIES
+    IMPORTED_LOCATION "${_voiceengine_sdk_root}/lib/VoiceEngineRuntime.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${_voiceengine_sdk_root}/include")
+
+add_library(VoiceEngine::SDK INTERFACE IMPORTED)
+set_target_properties(VoiceEngine::SDK PROPERTIES
+    INTERFACE_LINK_LIBRARIES "VoiceEngine::Runtime;VoiceEngine::Core;delayimp"
+    INTERFACE_LINK_OPTIONS "/DELAYLOAD:VoiceEngineCore.dll")
+
+add_library(VoiceEngine::CXX INTERFACE IMPORTED)
+set_target_properties(VoiceEngine::CXX PROPERTIES
+    INTERFACE_LINK_LIBRARIES "VoiceEngine::SDK"
+    INTERFACE_COMPILE_FEATURES "cxx_std_17")
+
+set(VOICEENGINE_RUNTIME_ROOT "${_voiceengine_sdk_root}/bin")

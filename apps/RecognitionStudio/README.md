@@ -22,13 +22,13 @@ RecognitionStudio 是一个 Windows 桌面识别工具，当前范围只包含�
 - Qt 5.12.9 `msvc2017_64`
 - CMake 3.25 或更高版本
 - NVIDIA GeForce RTX 40（`sm_89`）或 RTX 50（`sm_120`）系列显卡
-- 已构建的 VoiceEngine 与 ScanEngine 独立 SDK
+- 根仓库中已提交的 VoiceEngine 与 ScanEngine 独立 SDK 基线
 
 默认 SDK 目录：
 
 ```text
-../../engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk
-../../engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk
+../../sdk/VoiceEngine/windows-x64
+../../sdk/ScanEngine/windows-x64
 ```
 
 ## 构建与检查
@@ -49,4 +49,4 @@ build\windows-msvc-qt5\bin\RecognitionStudio.exe
 
 ## 集成边界
 
-宿主只通过公开 C++ SDK 调用 VoiceEngine 和 ScanEngine，不复制两套产品的内部源码。OCR 与 ASR 共用 GPU 时串行执行，避免显存争用。源码仓库不包含模型、SDK DLL、生成结果或构建目录。
+宿主只通过公开 C++ SDK 调用 VoiceEngine 和 ScanEngine，不复制两套产品的内部源码。OCR 与 ASR 共用 GPU 时串行执行，避免显存争用。应用目录不承载 SDK DLL 或模型；它们作为已验证基线统一提交在根 `sdk/` 并由 Git LFS 管理。生成结果和构建目录不进入 Git。

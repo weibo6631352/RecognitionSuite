@@ -1,0 +1,17 @@
+{
+    "schema_version":  1,
+    "engine":  "VoiceEngine",
+    "engine_version":  "0.1.0",
+    "sdk_api_version":  1,
+    "platform":  "windows-x64",
+    "source_commit":  "5de4416e59bae27f997436a3f9c5517ee801e5cd",
+    "source_tree":  "85ca429729f7873f5f2e65e8891338aed1025758",
+    "build_preset":  "win-qt5.12.9-msvc-cuda",
+    "payload_format":  "expanded-directory",
+    "model_packaging":  "gguf-part1-part2; materialize before distribution",
+    "payload_file_count":  40,
+    "payload_bytes":  5671767988,
+    "checksums_file":  "SHA256SUMS.txt",
+    "checksums_sha256":  "0b09cb32936a9af2b3a79259498a7a00ccbf849d240d41aa9432f80098fb04bb",
+    "generated_by":  "scripts/publish-sdks.ps1"
+}

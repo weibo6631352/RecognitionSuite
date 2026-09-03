@@ -11,6 +11,7 @@ RecognitionSuite
 ├─ engines/
 │  ├─ ScanEngine                        文档/表格识别产品与 SDK
 │  └─ VoiceEngine                       音频/麦克风识别产品与 SDK
+├─ sdk/                                 已验证、已提交的 Windows x64 SDK 基线
 ├─ docs/                                需求、技术总结、发布约定
 ├─ testdata/                            冻结验收输入与人工参考
 └─ scripts/                             联合构建和产物检查
@@ -27,21 +28,33 @@ git lfs install
 git lfs pull
 ```
 
-当前仓库尚未配置远端。配置新的 RecognitionSuite 远端后，只需维护这一处 Git/LFS 仓库。
-
 ## 构建
 
-Windows 构建机需要 VS 2022/v143、Qt 5.12.9 MSVC x64 和 CUDA 12.9。按依赖顺序构建全部组件：
+Windows 构建机需要 VS 2022/v143 和 Qt 5.12.9 MSVC x64。日常开发直接使用仓库中已验证的两套 SDK，只构建 `RecognitionStudio`：
 
 ```powershell
 .\scripts\build.ps1
 ```
+
+只有在明确更新引擎基线时才重建两套引擎，并把验证后的 staging SDK 发布到根 `sdk/`：
+
+```powershell
+# 如果引擎源码有变化，先暂存它，使 SDK 清单能记录确定的 source_tree。
+git add engines/ScanEngine engines/VoiceEngine
+.\scripts\build.ps1 -Target SDKs
+git status --short -- sdk
+```
+
+该流程需要 CUDA 12.9、cuDNN 9.9 以及引擎各自锁定的构建依赖。`-Target All` 会刷新 SDK 后再构建 Studio；普通应用开发不要使用它。
+`-Target Engines`、`ScanEngine` 和 `VoiceEngine` 只生成引擎本地 staging，不更新已提交的根 SDK 基线。
 
 只检查仓库状态或现有产物：
 
 ```powershell
 .\scripts\status.ps1
 .\scripts\verify-artifacts.ps1
+# 发布前可执行较慢的全量 SDK 哈希校验：
+.\scripts\verify-artifacts.ps1 -VerifySdkHashes
 ```
 
 详细的仓库边界、交付物选择和发布规则见 [`docs/REPOSITORY_AND_RELEASE.md`](docs/REPOSITORY_AND_RELEASE.md)。
@@ -51,5 +64,6 @@ Windows 构建机需要 VS 2022/v143、Qt 5.12.9 MSVC x64 和 CUDA 12.9。按依
 - `docs/requirements-source/`：原始需求图片，仅作需求追溯。
 - `testdata/scan/`：扫描识别输入及人工参考。
 - `testdata/audio/`：语音识别输入；正式准确率测试仍需配套冻结真值。
-- `artifacts/`：可选的最终归档和检查报告，不进入 Git。
-- 各子仓库的 `build/`：本机构建、SDK 和运行包，不进入 Git。
+- `sdk/<Engine>/windows-x64/`：已验证 SDK 基线，包含 LFS 管理的模型和二进制，进入 Git。
+- `artifacts/`：最终应用归档、校验和与检查报告，不进入 Git，并应上传发布制品库。
+- 各子项目的 `build/`：本地中间构建、SDK staging 和运行包，不进入 Git。

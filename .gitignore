@@ -5,3 +5,8 @@
 *.user
 Thumbs.db
 Desktop.ini
+
+# Defense in depth: the committed VoiceEngine SDK stores the main model as
+# LFS-safe parts. Materialize the complete GGUF only under ignored build/ or
+# artifacts/ output, never in the published SDK baseline.
+/sdk/VoiceEngine/windows-x64/bin/models/qwen3-asr-1.7b/Qwen3-ASR-1.7B-bf16.gguf

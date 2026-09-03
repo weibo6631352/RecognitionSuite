@@ -14,7 +14,9 @@
       "binaryDir": "${sourceDir}/build/windows-msvc-qt5",
       "cacheVariables": {
         "CMAKE_GENERATOR_INSTANCE": "C:/Program Files/Microsoft Visual Studio/2022/Professional,version=17.14.37614.0",
-        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64"
+        "CMAKE_PREFIX_PATH": "C:/Qt/Qt5.12.9/5.12.9/msvc2017_64",
+        "VOICEENGINE_SDK_ROOT": "${sourceDir}/../../sdk/VoiceEngine/windows-x64",
+        "SCANENGINE_SDK_ROOT": "${sourceDir}/../../sdk/ScanEngine/windows-x64"
       }
     }
   ],

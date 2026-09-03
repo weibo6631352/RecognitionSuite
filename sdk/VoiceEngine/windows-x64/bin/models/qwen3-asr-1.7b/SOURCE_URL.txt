@@ -1,0 +1,4 @@
+https://huggingface.co/ggml-org/Qwen3-ASR-1.7B-GGUF
+https://huggingface.co/ggml-org/Qwen3-ASR-1.7B-GGUF/resolve/main/Qwen3-ASR-1.7B-bf16.gguf
+https://huggingface.co/ggml-org/Qwen3-ASR-1.7B-GGUF/resolve/main/mmproj-Qwen3-ASR-1.7B-bf16.gguf
+Upstream model: https://huggingface.co/Qwen/Qwen3-ASR-1.7B

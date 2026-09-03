@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('All', 'Engines', 'ScanEngine', 'VoiceEngine', 'Studio')]
-    [string]$Target = 'All',
+    [ValidateSet('Studio', 'All', 'SDKs', 'Engines', 'ScanEngine', 'VoiceEngine')]
+    [string]$Target = 'Studio',
     [switch]$ConfigureOnly
 )
 
@@ -37,31 +37,76 @@ function Invoke-CMakePreset {
     }
 }
 
-if ($Target -in @('All', 'Engines', 'ScanEngine')) {
+function Assert-EngineSourcesReadyForPublish {
+    $enginePaths = @('engines/ScanEngine', 'engines/VoiceEngine')
+    & git -C $suiteRoot diff --quiet -- $enginePaths
+    $unstagedExitCode = $LASTEXITCODE
+    if ($unstagedExitCode -eq 1) {
+        $unstagedChanges = @(& git -C $suiteRoot diff --name-only -- $enginePaths)
+        throw "Stage or restore engine source changes before building publishable SDKs:`n$($unstagedChanges -join "`n")"
+    }
+    if ($unstagedExitCode -ne 0) {
+        throw 'Unable to inspect unstaged engine source changes.'
+    }
+    $untrackedEngineFiles = @(& git -C $suiteRoot ls-files --others --exclude-standard -- $enginePaths)
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to inspect untracked engine source files.'
+    }
+    if ($untrackedEngineFiles.Count -gt 0) {
+        throw "Stage or remove untracked engine source files before building publishable SDKs:`n$($untrackedEngineFiles -join "`n")"
+    }
+}
+
+function Assert-PublishedSdkBaselineReadyForRefresh {
+    $sdkPaths = @('sdk/ScanEngine/windows-x64', 'sdk/VoiceEngine/windows-x64')
+    $trackedSdkFiles = @(& git -C $suiteRoot ls-files -- $sdkPaths)
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to inspect the published SDK baseline.'
+    }
+    if ($trackedSdkFiles.Count -eq 0) {
+        return
+    }
+    $sdkChanges = @(& git -C $suiteRoot status --porcelain --untracked-files=all -- $sdkPaths)
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to inspect changes in the published SDK baseline.'
+    }
+    if ($sdkChanges.Count -gt 0) {
+        $changePreview = @($sdkChanges | Select-Object -First 20)
+        if ($sdkChanges.Count -gt $changePreview.Count) {
+            $changePreview += "... and $($sdkChanges.Count - $changePreview.Count) more paths"
+        }
+        throw "Commit or restore existing root SDK changes before rebuilding publishable SDKs:`n$($changePreview -join "`n")"
+    }
+}
+
+if ($Target -in @('All', 'SDKs')) {
+    Assert-EngineSourcesReadyForPublish
+    if (-not $ConfigureOnly) {
+        Assert-PublishedSdkBaselineReadyForRefresh
+    }
+}
+
+if ($Target -in @('All', 'SDKs', 'Engines', 'ScanEngine')) {
     Invoke-CMakePreset -Repository 'engines/ScanEngine' -Preset 'win-qt5.12.9-msvc-mlx-cuda'
 }
 
-if ($Target -in @('All', 'Engines', 'VoiceEngine')) {
+if ($Target -in @('All', 'SDKs', 'Engines', 'VoiceEngine')) {
     Invoke-CMakePreset -Repository 'engines/VoiceEngine' -Preset 'win-qt5.12.9-msvc-cuda'
 }
 
+if (-not $ConfigureOnly -and $Target -in @('All', 'SDKs')) {
+    & (Join-Path $PSScriptRoot 'publish-sdks.ps1')
+}
+elseif (-not $ConfigureOnly -and $Target -in @('Engines', 'ScanEngine', 'VoiceEngine')) {
+    Write-Output 'Engine staging build complete; the committed root SDK baseline was not changed. Use -Target SDKs to refresh it.'
+}
+
 if ($Target -in @('All', 'Studio')) {
-    $requiredSdkConfigs = @(
-        'engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk/cmake/ScanEngineConfig.cmake',
-        'engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk/cmake/VoiceEngineConfig.cmake'
-    )
-    $missingSdkConfigs = @(
-        foreach ($relativePath in $requiredSdkConfigs) {
-            if (-not (Test-Path -LiteralPath (Join-Path $suiteRoot $relativePath))) { $relativePath }
-        }
-    )
-    if ($missingSdkConfigs.Count -gt 0 -and $Target -eq 'All' -and $ConfigureOnly) {
-        Write-Warning 'Skipping RecognitionStudio configure: configure-only does not create the engine SDK packages.'
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass `
+        -File (Join-Path $PSScriptRoot 'verify-artifacts.ps1') `
+        -SdkOnly -SkipSdkGitTracking
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Published SDK baseline verification failed.'
     }
-    elseif ($missingSdkConfigs.Count -gt 0) {
-        throw "Build the engine SDKs first; missing $($missingSdkConfigs -join ', ')"
-    }
-    else {
-        Invoke-CMakePreset -Repository 'apps/RecognitionStudio' -Preset 'windows-msvc-qt5'
-    }
+    Invoke-CMakePreset -Repository 'apps/RecognitionStudio' -Preset 'windows-msvc-qt5'
 }

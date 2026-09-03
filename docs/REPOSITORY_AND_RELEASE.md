@@ -4,15 +4,20 @@
 
 采用一个 Git monorepo，目录边界为 `apps/RecognitionStudio`、`engines/ScanEngine`、`engines/VoiceEngine`。旧仓库历史不再保留；跨组件 ABI 变更、验收资料和发布版本由一个提交原子化管理。
 
-Git 合并不等于源码耦合。两个引擎继续生成独立 SDK，宿主继续只链接公开 C/C++ ABI，不直接包含引擎内部源码。顶层 tag 表示整套系统唯一、可复现的版本。
+Git 合并不等于源码耦合。两个引擎继续生成独立 SDK，宿主继续只链接公开 C/C++ ABI，不直接包含引擎内部源码。验证通过的 SDK 基线提交在根 `sdk/`；顶层 tag 表示源码、SDK 基线和应用的唯一、可复现版本。
 
-## 构建顺序
+## 日常构建与 SDK 刷新
 
-1. `engines/ScanEngine` 生成 `build/win-qt5.12.9-msvc-mlx-cuda/sdk/`。
-2. `engines/VoiceEngine` 生成 `build/win-qt5.12.9-msvc-cuda/sdk/`。
-3. `apps/RecognitionStudio` 从上述两个 SDK 构建最终应用。
+日常应用开发不重建引擎。`apps/RecognitionStudio` 直接消费：
 
-顶层 `scripts/build.ps1` 固化了该顺序。子仓库仍可单独构建和测试。
+- `sdk/ScanEngine/windows-x64/`
+- `sdk/VoiceEngine/windows-x64/`
+
+执行 `scripts/build.ps1` 默认只构建 Studio。
+
+只有 SDK 需要升级时才执行 `scripts/build.ps1 -Target SDKs`：如果引擎源码有变化，先把它暂存；脚本会拒绝未暂存或未跟踪的引擎源码，避免 SDK 与构建输入不一致。随后脚本在两个引擎的 `build/<preset>/sdk/` 生成 staging，由 `scripts/publish-sdks.ps1` 规范化模型、完成全量 SHA-256 校验并以可回滚方式更新根 SDK 基线。每份清单同时记录基准 `source_commit` 和实际暂存引擎子树的 `source_tree`；SDK 与对应源码必须在同一提交中审查。
+
+`-Target Engines`、`ScanEngine` 和 `VoiceEngine` 只构建引擎本地 staging，不会发布根 SDK；只有 `SDKs` 和 `All` 会更新基线。
 
 ## 三类产物
 
@@ -21,18 +26,20 @@ Git 合并不等于源码耦合。两个引擎继续生成独立 SDK，宿主继
 - `engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/bin/`
 - `engines/VoiceEngine/VoiceEngineWindowsX64/`
 
-用于引擎单独演示和诊断，不是 RecognitionSuite 最终交付目录。
+用于引擎单独演示和诊断，是本地 staging，不是 RecognitionSuite 最终交付目录，也不进入 Git。
 
 ### 集成 SDK
 
-- `engines/ScanEngine/build/win-qt5.12.9-msvc-mlx-cuda/sdk/`
-- `engines/VoiceEngine/build/win-qt5.12.9-msvc-cuda/sdk/`
+- `sdk/ScanEngine/windows-x64/`
+- `sdk/VoiceEngine/windows-x64/`
 
-SDK 应包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/` 和 `licenses/`。SDK 用于开发集成，不应整体复制给最终用户。
+SDK 包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/`、`licenses/`、`SDK_MANIFEST.json` 和 `SHA256SUMS.txt`。它们是经验证、由 Git/LFS 跟踪的应用输入，不应整体复制给最终用户。
+
+VoiceEngine 的完整主 GGUF 超过远端单文件限制，因此 SDK 基线保存两个已校验分片。完整 GGUF 不允许写入根 SDK；Studio 只在自己的忽略构建输出中原子拼接并校验它，最终运行包只保留完整 GGUF。
 
 ### 最终用户运行包
 
-最终交付内容是 `apps/RecognitionStudio/build/windows-msvc-qt5/bin/`。它应包含：
+`apps/RecognitionStudio/build/windows-msvc-qt5/bin/` 是最终运行包的 staging。发布时应复制或压缩到 `artifacts/<version>/RecognitionStudio-windows-x64/`，生成校验和后上传发布制品库。运行包应包含：
 
 - `RecognitionStudio.exe` 和根目录 Qt/MSVC 运行库；
 - `components/voiceengine/` 与 `components/scanengine/` 两个相互隔离的 SDK 运行时；
@@ -49,4 +56,4 @@ SDK 应包含 `bin/`、`include/`、`lib/`、`cmake/`、`doc/`、`examples/` 和
 .\scripts\verify-artifacts.ps1
 ```
 
-该检查验证两个 SDK 和最终运行包的必要文件、私有 CUDA/FFmpeg 目录、模型、许可证及旧产品名残留。准确率 98% 不属于目录检查，需要冻结测试集、真值和统一计分规则另行出具报告。
+该检查验证已提交 SDK 基线和最终运行包的必要文件、清单、私有 CUDA/FFmpeg 目录、模型、许可证及旧产品名残留。发布前使用 `-VerifySdkHashes` 做全量校验。准确率 98% 不属于目录检查，需要冻结测试集、真值和统一计分规则另行出具报告。
